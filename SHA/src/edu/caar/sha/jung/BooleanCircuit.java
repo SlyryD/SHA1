@@ -50,7 +50,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	}
 
 	/**
-	 * Sample circuit
+	 * Initializes graph of circuit
 	 */
 	public void initializeGraph() {
 		// Add input vertices
@@ -270,6 +270,20 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		for (int i = 0; i < input.size(); i++) {
 			inputNodes.get(i).setValue(input.get(i));
 		}
+	}
+
+	/**
+	 * Get output if input already set
+	 * 
+	 * @return output
+	 */
+	public List<Boolean> getOutput() {
+		evaluateCircuit();
+		List<Boolean> output = new ArrayList<Boolean>(outputNodes.size());
+		for (int i = 0; i < outputNodes.size(); i++) {
+			output.add(outputNodes.get(i).getValue());
+		}
+		return output;
 	}
 
 	/**
