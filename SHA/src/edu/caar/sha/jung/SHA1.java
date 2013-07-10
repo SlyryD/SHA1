@@ -69,13 +69,13 @@ public class SHA1 extends BooleanCircuit {
 		notIt = notGates.iterator();
 
 		// Add and gates
-		for (int i = 0; i < 5760; i++) {
+		for (int i = 0; i < 23025; i++) {
 			addVertex(GateFactory.getAndGate());
 		}
 		andIt = andGates.iterator();
 
 		// Add or gates
-		for (int i = 0; i < 1920; i++) {
+		for (int i = 0; i < 11670; i++) {
 			addVertex(GateFactory.getOrGate());
 		}
 		orIt = orGates.iterator();
@@ -106,7 +106,7 @@ public class SHA1 extends BooleanCircuit {
 					rotl(new ArrayList<Gate>(wVariables.get(0)), 5),
 					add(fFunction(wVariables.get(1), wVariables.get(2),
 							wVariables.get(3)),
-							add(wVariables.get(4),
+							add(new ArrayList<Gate>(wVariables.get(4)),
 									add(xStorage.get(i), yConstants.get(1)))));
 			// (A, B, C, D, E) := (t, A, rotl30(B), C, D)
 			for (int j = 4; j > 0; j--) {
@@ -178,6 +178,12 @@ public class SHA1 extends BooleanCircuit {
 		}
 	}
 
+	public Gate not(Gate input) {
+		Gate not = notIt.next();
+		addEdge(new Edge(), input, not, EdgeType.DIRECTED);
+		return not;
+	}
+
 	/**
 	 * Computes logical not of input and returns output gates
 	 * 
@@ -186,11 +192,8 @@ public class SHA1 extends BooleanCircuit {
 	 */
 	public List<Gate> not(List<Gate> input) {
 		List<Gate> output = new ArrayList<Gate>(input.size());
-		Gate not;
 		for (int i = 0; i < input.size(); i++) {
-			not = notIt.next();
-			addEdge(new Edge(), input.get(i), not, EdgeType.DIRECTED);
-			output.add(not);
+			output.add(not(input.get(i)));
 		}
 		return output;
 	}
@@ -259,12 +262,6 @@ public class SHA1 extends BooleanCircuit {
 		return output;
 	}
 
-	public List<Gate> rotl(List<Gate> list, int number) {
-		List<Gate> newList = list.subList(number, 32);
-		newList.addAll(list.subList(0, number));
-		return newList;
-	}
-
 	/**
 	 * Creates circuit which adds two 32-bit numbers (mod 2^32)
 	 * 
@@ -299,7 +296,7 @@ public class SHA1 extends BooleanCircuit {
 	 * @param input1
 	 * @param input2
 	 * @param input3
-	 * @return
+	 * @return f(input1, input2, input3)
 	 */
 	public List<Gate> fFunction(List<Gate> input1, List<Gate> input2,
 			List<Gate> input3) {
@@ -312,7 +309,7 @@ public class SHA1 extends BooleanCircuit {
 	 * @param input1
 	 * @param input2
 	 * @param input3
-	 * @return
+	 * @return g(input1, input2, input3)
 	 */
 	public List<Gate> gFunction(List<Gate> input1, List<Gate> input2,
 			List<Gate> input3) {
@@ -326,11 +323,17 @@ public class SHA1 extends BooleanCircuit {
 	 * @param input1
 	 * @param input2
 	 * @param input3
-	 * @return
+	 * @return h(input1, input2, input3)
 	 */
 	public List<Gate> hFunction(List<Gate> input1, List<Gate> input2,
 			List<Gate> input3) {
 		return xor(input1, xor(input2, input3));
+	}
+
+	public List<Gate> rotl(List<Gate> list, int number) {
+		List<Gate> newList = new ArrayList<Gate>(list.subList(number, 32));
+		newList.addAll(list.subList(0, number));
+		return newList;
 	}
 
 	@Override
@@ -591,12 +594,13 @@ public class SHA1 extends BooleanCircuit {
 		}
 
 		// Valid randomly generated input
-		List<Boolean> generatedInput = SHA1.generateInput();
-		System.out.println(BooleanCircuit.booleanListToString(generatedInput));
-		System.out.println(generatedInput.size());
+//		List<Boolean> generatedInput = SHA1.generateInput();
+//		System.out.println(BooleanCircuit.booleanListToString(generatedInput));
 
 		// Get output, should be da39a3ee5e6b4b0d3255bfef95601890afd80709
-		System.out.println(circuit.getOutput(input));
+		System.out.println(BooleanCircuit.binarytoHexString(BooleanCircuit
+				.booleanListToString(circuit.getOutput(input))));
+
 	}
 
 }

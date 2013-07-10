@@ -535,6 +535,16 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		return sb.toString();
 	}
 
+	public static String binarytoHexString(String binaryStr) {
+		StringBuilder sb = new StringBuilder();
+		String substring;
+		for (int i = 0; i < binaryStr.length() / 8; i++) {
+			substring = binaryStr.substring(8 * i, 8 * (i + 1));
+			sb.append(Integer.toHexString(Integer.parseInt(substring, 2)));
+		}
+		return sb.toString();
+	}
+
 	public static void main(String[] args) {
 		// Get circuit
 		BooleanCircuit circuit = new BooleanCircuit();
