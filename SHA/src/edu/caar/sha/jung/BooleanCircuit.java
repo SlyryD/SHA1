@@ -3,6 +3,7 @@ package edu.caar.sha.jung;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,8 +28,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	// Lists of gates in circuit
 	protected List<Gate> inputNodes, outputNodes, notGates, andGates, orGates,
 			xorGates, nandGates, norGates, xnorGates;
+	// Source and sink for use by min cut algorithm
+	protected Gate source, sink;
 	// Min cut edges calculated once
 	private Set<Edge> minCutEdges;
+	// Version of circuit
+	int version, minCutVersion;
 
 	/**
 	 * Constructs boolean circuit with given edge class and initializes
@@ -47,83 +52,14 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		nandGates = new ArrayList<Gate>();
 		norGates = new ArrayList<Gate>();
 		xnorGates = new ArrayList<Gate>();
-	}
-
-	/**
-	 * Initializes graph of circuit
-	 */
-	public void initializeGraph() {
-		// Add input vertices
-		for (int i = 0; i < 3; i++) {
-			addVertex(GateFactory.getInputNode());
-		}
-
-		// Add output vertices
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getOutputNode());
-		}
-
-		// Add not gates
-		for (int i = 0; i < 3; i++) {
-			addVertex(GateFactory.getNotGate());
-		}
-
-		// Add and gates
-		for (int i = 0; i < 2; i++) {
-			addVertex(GateFactory.getAndGate());
-		}
-
-		// Add or gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getOrGate());
-		}
-
-		// Add xor gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getXorGate());
-		}
-
-		// Add nand gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getNandGate());
-		}
-
-		// Add nor gates
-		for (int i = 0; i < 0; i++) {
-			addVertex(GateFactory.getNorGate());
-		}
-
-		// Add xnor gates
-		for (int i = 0; i < 0; i++) {
-			addVertex(GateFactory.getXnorGate());
-		}
-
-		// Add edges to create linking structure
-		addEdge(new Edge(), inputNodes.get(0), notGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), notGates.get(0), andGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), andGates.get(0), notGates.get(1), EdgeType.DIRECTED);
-		addEdge(new Edge(), notGates.get(1), orGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), orGates.get(0), outputNodes.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(1), andGates.get(1),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), andGates.get(1), andGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), andGates.get(1), xorGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), xorGates.get(0), orGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(1), nandGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), nandGates.get(0), andGates.get(1),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(2), nandGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), nandGates.get(0), notGates.get(2),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), notGates.get(2), xorGates.get(0), EdgeType.DIRECTED);
+		source = GateFactory.getSink();
+		sink = GateFactory.getSink();
+		minCutVersion = version = 0;
 	}
 
 	@Override
 	public boolean addVertex(Gate gate) {
+		version++;
 		switch (gate.getType()) {
 		case INPUT:
 			inputNodes.add(gate);
@@ -160,6 +96,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 
 	@Override
 	public boolean removeVertex(Gate gate) {
+		version++;
 		switch (gate.getType()) {
 		case INPUT:
 			inputNodes.remove(gate);
@@ -192,6 +129,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 			break;
 		}
 		return super.removeVertex(gate);
+	}
+
+	@Override
+	public boolean addEdge(Edge e, Gate v1, Gate v2, EdgeType edge_type) {
+		version++;
+		return super.addEdge(e, v1, v2, edge_type);
 	}
 
 	/**
@@ -260,6 +203,14 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		gate.setValue(value);
 		return value;
 	}
+	
+	public List<Boolean> getInput() {
+		List<Boolean> input = new ArrayList<Boolean>(inputNodes.size());
+		for (int i = 0; i < inputNodes.size(); i++) {
+			input.add(inputNodes.get(i).getValue());
+		}
+		return input;
+	}
 
 	/**
 	 * Set input of circuit
@@ -306,78 +257,186 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * Evaluates circuit at each gate from the min cut
 	 */
 	public void minCutEvaluateCircuit() {
-		int inputSize = inputNodes.size();
-		List<Boolean> input1 = new ArrayList<Boolean>(inputSize), input2 = new ArrayList<Boolean>(
-				inputSize);
-		for (int i = 0; i < inputSize; i++) {
-			input1.add(null);
-			input2.add(null);
+		Set<Edge> minCutEdges = getMinCutEdges();
+		System.out.println(minCutEdges);
+		Gate source, dest;
+		for (Edge edge : minCutEdges) {
+			source = getSource(edge);
+			dest = getDest(edge);
+			if (source.getType() == Gate.Type.INPUT) {
+				source.setValue(true);
+			} else if (dest.getType() == Gate.Type.INPUT) {
+				dest.setValue(true);
+			}
 		}
-		for (Edge edge : getMinCutEdges()) {
-			minCutEvaluateVertex(edge, false, input1, input2);
-		}
-		System.out.println(booleanListToString(input1) + " --> "
-				+ booleanListToString(getOutput(input1)));
-		System.out.println(booleanListToString(input2) + " --> "
-				+ booleanListToString(getOutput(input2)));
 	}
 
-	/**
-	 * Evaluates each gate
-	 */
-	public void minCutEvaluateVertex(Edge edge, boolean value,
-			List<Boolean> input1, List<Boolean> input2) {
-		Gate source = getSource(edge), dest = getDest(edge);
-		int sourceNum = source.getNumber(), destNum = dest.getNumber();
-		switch (source.getType()) {
-		case SINK:
-			input1.set(destNum, value);
-			input2.set(destNum, value);
-			break;
-		case INPUT:
-			input1.set(sourceNum, value);
-			input2.set(sourceNum, value);
-			break;
-		case OUTPUT:
-			minCutEvaluateVertex(getInEdges(source).iterator().next(), false,
-					input1, input2);
-			break;
-		case NOT:
-			minCutEvaluateVertex(getInEdges(source).iterator().next(), !value,
-					input1, input2);
-			break;
-		case AND:
-			break;
-		case OR:
-			break;
-		case XOR:
-			break;
-		case NAND:
-			break;
-		case NOR:
-			break;
-		case XNOR:
-			break;
-		default:
-			value = false;
-			break;
+	private boolean getEdgeValue(Edge edge) {
+		Gate source = getSource(edge);
+		return source.getType() == Gate.Type.SINK ? getDest(edge).getValue()
+				: source.getValue();
+	}
+
+	private Gate getOtherSource(Gate source, Gate dest) {
+		Gate gate = null;
+		for (Iterator<Gate> it = getPredecessors(dest).iterator(); it.hasNext();) {
+			gate = it.next();
+			if (gate != source) {
+				return gate;
+			}
 		}
+		throw new IllegalArgumentException(dest + " does not have other source");
 	}
 
 	/**
 	 * Simplify circuit by removing unnecessary gates
 	 */
-	public void simplifyCircuit() {
-		for (Gate gate : getVertices()) {
+	public List<Gate> simplifyCircuit() {
+		version++;
+		List<Gate> variableInputs = new ArrayList<Gate>();
+		for (Gate gate : getInputNodes()) {
 			if (gate.isEvaluated()) {
-				// TODO: Simplify evaluated vertices
+				simplifyVertex(gate, variableInputs);
+			}
+		}
+		return variableInputs;
+	}
+
+	public void simplifyVertex(Gate gate, List<Gate> variableInputs) {
+		LinkedList<Edge> edges = new LinkedList<Edge>(getOutEdges(gate));
+		while (!edges.isEmpty()) {
+			Gate dest = getDest(edges.pop());
+			Gate otherGate, not;
+			Edge newEdge;
+			switch (dest.getType()) {
+			case OUTPUT:
+				dest.setValue(gate.getValue());
+				break;
+			case NOT:
+				dest.setValue(!gate.getValue());
+				for (Edge edge : getOutEdges(dest)) {
+					edges.push(edge);
+				}
+				break;
+			case AND:
+				otherGate = getOtherSource(gate, dest);
+				for (Edge edge : getOutEdges(dest)) {
+					newEdge = new Edge();
+					addEdge(newEdge, gate.getValue() ? otherGate : gate,
+							getDest(edge), EdgeType.DIRECTED);
+					edges.push(newEdge);
+				}
+				removeVertex(dest);
+				simplifyUp(!gate.getValue() ? otherGate : gate, variableInputs);
+				break;
+			case OR:
+				otherGate = getOtherSource(gate, dest);
+				for (Edge edge : getOutEdges(dest)) {
+					newEdge = new Edge();
+					addEdge(newEdge, gate.getValue() ? gate : otherGate,
+							getDest(edge), EdgeType.DIRECTED);
+					edges.push(newEdge);
+				}
+				removeVertex(dest);
+				simplifyUp(!gate.getValue() ? gate : otherGate, variableInputs);
+				break;
+			case XOR:
+				// Gate will depend on other gate, circumvent and remove gate
+				otherGate = getOtherSource(gate, dest);
+				if (gate.getValue()) {
+					not = GateFactory.getNotGate();
+					addVertex(not);
+					addEdge(new Edge(), otherGate, not, EdgeType.DIRECTED);
+					for (Edge edge : getOutEdges(dest)) {
+						newEdge = new Edge();
+						addEdge(newEdge, not, getDest(edge), EdgeType.DIRECTED);
+						edges.push(newEdge);
+					}
+				} else {
+					for (Edge edge : getOutEdges(dest)) {
+						newEdge = new Edge();
+						addEdge(newEdge, otherGate, getDest(edge),
+								EdgeType.DIRECTED);
+						edges.push(newEdge);
+					}
+				}
+				removeVertex(dest);
+				simplifyUp(gate, variableInputs);
+				break;
+			case NAND:
+				otherGate = getOtherSource(gate, dest);
+				not = GateFactory.getNotGate();
+				addVertex(not);
+				addEdge(new Edge(), gate.getValue() ? otherGate : gate, not,
+						EdgeType.DIRECTED);
+				for (Edge edge : getOutEdges(dest)) {
+					newEdge = new Edge();
+					addEdge(newEdge, not, getDest(edge), EdgeType.DIRECTED);
+					edges.push(newEdge);
+				}
+				removeVertex(dest);
+				simplifyUp(!gate.getValue() ? otherGate : gate, variableInputs);
+				break;
+			case NOR:
+				otherGate = getOtherSource(gate, dest);
+				not = GateFactory.getNotGate();
+				addVertex(not);
+				addEdge(new Edge(), gate.getValue() ? gate : otherGate, not,
+						EdgeType.DIRECTED);
+				for (Edge edge : getOutEdges(dest)) {
+					newEdge = new Edge();
+					addEdge(newEdge, not, getDest(edge), EdgeType.DIRECTED);
+					edges.push(newEdge);
+				}
+				removeVertex(dest);
+				simplifyUp(!gate.getValue() ? gate : otherGate, variableInputs);
+				break;
+			case XNOR:
+				// Gate will depend on other gate, circumvent and remove gate
+				otherGate = getOtherSource(gate, dest);
+				if (gate.getValue()) {
+					for (Edge edge : getOutEdges(dest)) {
+						newEdge = new Edge();
+						addEdge(newEdge, otherGate, getDest(edge),
+								EdgeType.DIRECTED);
+						edges.push(newEdge);
+					}
+				} else {
+					not = GateFactory.getNotGate();
+					addVertex(not);
+					addEdge(new Edge(), otherGate, not, EdgeType.DIRECTED);
+					for (Edge edge : getOutEdges(dest)) {
+						newEdge = new Edge();
+						addEdge(newEdge, not, getDest(edge), EdgeType.DIRECTED);
+						edges.push(newEdge);
+					}
+				}
+				removeVertex(dest);
+				simplifyUp(gate, variableInputs);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	public void simplifyUp(Gate vertex, List<Gate> variableInputs) {
+		if (vertex.getType() == Gate.Type.INPUT) {
+			if (getSuccessorCount(vertex) == 0) {
+				variableInputs.add(vertex);
+			}
+		} else {
+			List<Gate> predecessors = new ArrayList<Gate>(
+					getPredecessors(vertex));
+			removeVertex(vertex);
+			for (Gate gate : predecessors) {
+				simplifyUp(gate, variableInputs);
 			}
 		}
 	}
 
 	public Set<Edge> calcMinCut() {
 		// Add sinks to circuit for sake of min cut
-		Gate source = GateFactory.getSink(), sink = GateFactory.getSink();
 		addVertex(source);
 		addVertex(sink);
 
@@ -418,9 +477,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		System.out.println("The min cut weight is: " + alg.getMaxFlow());
 
 		// Remove source and sink
-		// removeVertex(source);
-		// removeVertex(sink);
-
+		minCutVersion = version;
 		return alg.getMinCutEdges();
 	}
 
@@ -511,7 +568,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * @return min cut edges
 	 */
 	public Set<Edge> getMinCutEdges() {
-		if (minCutEdges == null) {
+		if (minCutVersion != version) {
 			return (minCutEdges = calcMinCut());
 		}
 		return minCutEdges;
@@ -534,37 +591,22 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		}
 		return sb.toString();
 	}
+	
+	public static List<Boolean> StringToBooleanList(String string) {
+		List<Boolean> list = new ArrayList<Boolean>(string.length());
+		for (char value : string.toCharArray()) {
+			list.add(value == '1' ? true : false);
+		}
+		return list;
+	}
 
 	public static String binarytoHexString(String binaryStr) {
 		StringBuilder sb = new StringBuilder();
 		String substring;
-		for (int i = 0; i < binaryStr.length() / 8; i++) {
-			substring = binaryStr.substring(8 * i, 8 * (i + 1));
+		for (int i = 0; i < binaryStr.length() / 4; i++) {
+			substring = binaryStr.substring(4 * i, 4 * (i + 1));
 			sb.append(Integer.toHexString(Integer.parseInt(substring, 2)));
 		}
 		return sb.toString();
 	}
-
-	public static void main(String[] args) {
-		// Get circuit
-		BooleanCircuit circuit = new BooleanCircuit();
-		circuit.initializeGraph();
-
-		// Get output
-		List<Boolean> values = new ArrayList<Boolean>();
-		values.add(true);
-		values.add(false);
-		values.add(true);
-		System.out.println("Input: " + booleanListToString(values));
-		System.out.println("Output: "
-				+ booleanListToString(circuit.getOutput(values)));
-
-		// Associate DisplayCircuit
-		DisplayCircuit circuitDisplay = new DisplayCircuit(circuit);
-		circuitDisplay.display();
-
-		// Print edges
-		System.out.println(circuit);
-	}
-
 }

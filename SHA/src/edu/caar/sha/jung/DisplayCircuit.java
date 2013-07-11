@@ -159,7 +159,7 @@ public class DisplayCircuit {
 				return edgeStroke;
 			}
 		};
-		
+
 		Transformer<Edge, Paint> edgePaint = new Transformer<Edge, Paint>() {
 
 			@Override
@@ -170,7 +170,7 @@ public class DisplayCircuit {
 				return Color.BLACK;
 			}
 		};
-		
+
 		server.getRenderContext().setVertexShapeTransformer(vertexShape);
 		server.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
 		server.getRenderContext().setEdgeStrokeTransformer(
@@ -189,24 +189,4 @@ public class DisplayCircuit {
 		frame.pack();
 		frame.setVisible(true);
 	}
-
-	/**
-	 * Creates and displays circuit
-	 * 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		// Create circuit
-		BooleanCircuit circuit = new BooleanCircuit();
-		circuit.initializeGraph();
-		circuit.evaluateCircuit();
-
-		// Associate DisplayCircuit
-		DisplayCircuit circuitDisplay = new DisplayCircuit(circuit);
-		circuitDisplay.display();
-
-		// Print edges
-		System.out.println(circuit.toString());
-	}
-
 }

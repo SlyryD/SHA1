@@ -1,6 +1,6 @@
 package edu.caar.circuits;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.caar.sha.jung.BooleanCircuit;
@@ -15,16 +15,14 @@ import edu.uci.ics.jung.graph.util.EdgeType;
  * 
  * @author Ryan
  */
-public class TestCircuit {
+public class TestCircuit extends BooleanCircuit {
 
-	// Boolean circuit to model adder
-	BooleanCircuit circuit;
+	private static final long serialVersionUID = 2908552618552078249L;
 
 	/**
 	 * Constructs and initializes circuit
 	 */
 	public TestCircuit() {
-		circuit = new BooleanCircuit();
 		initializeGraph();
 	}
 
@@ -34,89 +32,74 @@ public class TestCircuit {
 	public void initializeGraph() {
 		// Add input vertices
 		for (int i = 0; i < 4; i++) {
-			circuit.addVertex(GateFactory.getInputNode());
+			addVertex(GateFactory.getInputNode());
 		}
-		List<Gate> inputNodes = circuit.getInputNodes();
 
 		// Add output vertices
 		for (int i = 0; i < 4; i++) {
-			circuit.addVertex(GateFactory.getOutputNode());
+			addVertex(GateFactory.getOutputNode());
 		}
-		List<Gate> outputNodes = circuit.getOutputNodes();
 
 		// Add and gates
 		for (int i = 0; i < 1; i++) {
-			circuit.addVertex(GateFactory.getAndGate());
+			addVertex(GateFactory.getAndGate());
 		}
-		List<Gate> andGates = circuit.getAndGates();
 
 		// Add or gates
 		for (int i = 0; i < 1; i++) {
-			circuit.addVertex(GateFactory.getOrGate());
+			addVertex(GateFactory.getOrGate());
 		}
-		List<Gate> orGates = circuit.getOrGates();
 
 		// Add xor gates
 		for (int i = 0; i < 1; i++) {
-			circuit.addVertex(GateFactory.getXorGate());
+			addVertex(GateFactory.getXorGate());
 		}
-		List<Gate> xorGates = circuit.getXorGates();
 
 		// Add edges to create linking structure
-		circuit.addEdge(new Edge(), inputNodes.get(0), andGates.get(0),
+		addEdge(new Edge(), inputNodes.get(0), andGates.get(0),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), inputNodes.get(1), andGates.get(0),
+		addEdge(new Edge(), inputNodes.get(1), andGates.get(0),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), inputNodes.get(2), orGates.get(0),
+		addEdge(new Edge(), inputNodes.get(2), orGates.get(0),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), inputNodes.get(3), xorGates.get(0),
+		addEdge(new Edge(), inputNodes.get(3), xorGates.get(0),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), andGates.get(0), orGates.get(0),
+		addEdge(new Edge(), andGates.get(0), orGates.get(0), EdgeType.DIRECTED);
+		addEdge(new Edge(), orGates.get(0), outputNodes.get(0),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), orGates.get(0), outputNodes.get(0),
+		addEdge(new Edge(), orGates.get(0), xorGates.get(0), EdgeType.DIRECTED);
+		addEdge(new Edge(), xorGates.get(0), outputNodes.get(1),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), orGates.get(0), xorGates.get(0),
+		addEdge(new Edge(), xorGates.get(0), outputNodes.get(2),
 				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), xorGates.get(0), outputNodes.get(1),
-				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), xorGates.get(0), outputNodes.get(2),
-				EdgeType.DIRECTED);
-		circuit.addEdge(new Edge(), xorGates.get(0), outputNodes.get(3),
+		addEdge(new Edge(), xorGates.get(0), outputNodes.get(3),
 				EdgeType.DIRECTED);
 	}
-
-	/**
-	 * Returns adder circuit
-	 * 
-	 * @return circuit
-	 */
-	public BooleanCircuit getCircuit() {
-		return circuit;
-	}
-
-	/**
-	 * Sets input into full adder circuit
-	 * 
-	 * @param bit1
-	 * @param bit2
-	 * @param bit3
-	 * @param bit4
-	 */
-	public void setInput(boolean bit1, boolean bit2, boolean bit3, boolean bit4) {
-		Iterator<Gate> gates = circuit.getInputNodes().iterator();
-		gates.next().setValue(bit1);
-		gates.next().setValue(bit2);
-		gates.next().setValue(bit3);
-		gates.next().setValue(bit4);
-	}
-	
-	
 
 	/**
 	 * Returns string representation of circuit
 	 */
 	public String toString() {
-		return circuit.toString();
+		return super.toString();
+	}
+
+	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {
+		if (variableInputs.size() > 0) {
+			Gate input = variableInputs.get(0);
+			if (variableInputs.size() == 1) {
+				input.setValue(false);
+				inputs.add(BooleanCircuit.booleanListToString(getInput()));
+				input.setValue(true);
+				inputs.add(BooleanCircuit.booleanListToString(getInput()));
+			} else {
+				List<Gate> removed = new ArrayList<Gate>(variableInputs);
+				removed.remove(0);
+				input.setValue(false);
+				generateInputs(removed, inputs);
+				input.setValue(true);
+				generateInputs(removed, inputs);
+			}
+		}
 	}
 
 	/**
@@ -125,23 +108,38 @@ public class TestCircuit {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// Create adder
-		TestCircuit testCircuit = new TestCircuit();
+		// Create circuits
+		TestCircuit circuit = new TestCircuit();
+		TestCircuit tempCircuit = new TestCircuit();
 
-		// Get circuit
-		BooleanCircuit circuit = testCircuit.getCircuit();
-		circuit.evaluateCircuit();
+		// Display circuit
+		new DisplayCircuit(tempCircuit).display();
 
-		// Print edges
-		System.out.println(testCircuit.toString());
+		// Hardcode inputs
+		tempCircuit.minCutEvaluateCircuit();
 
-		// Min-cut
-		System.out.println("Min-cut");
-		System.out.println("The edge set is: " + circuit.getMinCutEdges());
+		// Display circuit
+		new DisplayCircuit(tempCircuit).display();
 
-		// Associate DisplayCircuit
-		DisplayCircuit circuitDisplay = new DisplayCircuit(circuit);
-		circuitDisplay.display();
+		// Simplify circuit
+		List<Gate> variableInputs = tempCircuit.simplifyCircuit();
+		System.out.println("Variable Inputs: " + variableInputs);
+
+		// Display circuit
+		new DisplayCircuit(tempCircuit).display();
+
+		// Print collisions
+		List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+				variableInputs.size()));
+		tempCircuit.generateInputs(variableInputs, inputs);
+		List<String> outputs = new ArrayList<String>((int) Math.pow(2,
+				variableInputs.size()));
+		for (String input : inputs) {
+			outputs.add(BooleanCircuit.booleanListToString(circuit
+					.getOutput(BooleanCircuit.StringToBooleanList(input))));
+		}
+		System.out.println("Inputs with collisions: " + inputs + " --> "
+				+ outputs);
 	}
 
 }

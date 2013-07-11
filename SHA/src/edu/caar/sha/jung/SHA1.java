@@ -14,8 +14,7 @@ import edu.uci.ics.jung.graph.util.EdgeType;
 public class SHA1 extends BooleanCircuit {
 
 	// Serialization ID
-	private static final long serialVersionUID = -256141103412704175L;
-
+	private static final long serialVersionUID = -3025896134713478273L;
 	// Gate iterators
 	private Iterator<Gate> notIt, andIt, orIt, xorIt;
 
@@ -27,7 +26,6 @@ public class SHA1 extends BooleanCircuit {
 		initializeGraph();
 	}
 
-	@Override
 	public void initializeGraph() {
 		// Add input vertices
 		for (int i = 0; i < 25; i++) {
@@ -97,6 +95,7 @@ public class SHA1 extends BooleanCircuit {
 											xStorage.get(i - 16)))), 1));
 		}
 
+		// Temporary list of 32 gates
 		List<Gate> tList;
 
 		// Round 1
@@ -178,14 +177,20 @@ public class SHA1 extends BooleanCircuit {
 		}
 	}
 
+	/**
+	 * Connects and returns not gate
+	 * 
+	 * @param input
+	 * @return output
+	 */
 	public Gate not(Gate input) {
-		Gate not = notIt.next();
-		addEdge(new Edge(), input, not, EdgeType.DIRECTED);
-		return not;
+		Gate output = notIt.next();
+		addEdge(new Edge(), input, output, EdgeType.DIRECTED);
+		return output;
 	}
 
 	/**
-	 * Computes logical not of input and returns output gates
+	 * Connects and returns not gates
 	 * 
 	 * @param input
 	 * @return output
@@ -198,30 +203,79 @@ public class SHA1 extends BooleanCircuit {
 		return output;
 	}
 
+	/**
+	 * Connects and returns and gate
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public Gate and(Gate input1, Gate input2) {
 		return binaryOperation(Gate.Type.AND, input1, input2);
 	}
 
+	/**
+	 * Connects and returns and gates
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public List<Gate> and(List<Gate> input1, List<Gate> input2) {
 		return binaryOperation(Gate.Type.AND, input1, input2);
 	}
 
+	/**
+	 * Connects and returns or gate
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public Gate or(Gate input1, Gate input2) {
 		return binaryOperation(Gate.Type.OR, input1, input2);
 	}
 
+	/**
+	 * Connects and returns or gates
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public List<Gate> or(List<Gate> input1, List<Gate> input2) {
 		return binaryOperation(Gate.Type.OR, input1, input2);
 	}
 
+	/**
+	 * Connects and returns xor gate
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public Gate xor(Gate input1, Gate input2) {
 		return binaryOperation(Gate.Type.XOR, input1, input2);
 	}
 
+	/**
+	 * Connects and returns xor gates
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	public List<Gate> xor(List<Gate> input1, List<Gate> input2) {
 		return binaryOperation(Gate.Type.XOR, input1, input2);
 	}
 
+	/**
+	 * Connects and returns gate of given type
+	 * 
+	 * @param input1
+	 * @param input2
+	 * @return output
+	 */
 	private Gate binaryOperation(Gate.Type type, Gate input1, Gate input2) {
 		Iterator<Gate> gateIt;
 		switch (type) {
@@ -243,7 +297,7 @@ public class SHA1 extends BooleanCircuit {
 	}
 
 	/**
-	 * Computes logical binary operation on input and returns output gates
+	 * Connects and returns gates of given type
 	 * 
 	 * @param input1
 	 * @param input2
@@ -330,6 +384,13 @@ public class SHA1 extends BooleanCircuit {
 		return xor(input1, xor(input2, input3));
 	}
 
+	/**
+	 * Returns list of gates rotated left given numbers
+	 * 
+	 * @param list
+	 * @param number
+	 * @return rotl(list, number)
+	 */
 	public List<Gate> rotl(List<Gate> list, int number) {
 		List<Gate> newList = new ArrayList<Gate>(list.subList(number, 32));
 		newList.addAll(list.subList(0, number));
@@ -341,11 +402,24 @@ public class SHA1 extends BooleanCircuit {
 		return super.toString();
 	}
 
+	/**
+	 * Generates random input of random size
+	 * 
+	 * @return input
+	 */
 	public static List<Boolean> generateInput() {
+		return generateInput((int) (Math.random() * 448));
+	}
+
+	/**
+	 * Generates random input of given size
+	 * 
+	 * @return input
+	 */
+	public static List<Boolean> generateInput(int size) {
 		// Construct valid random input
 		List<Boolean> input = new ArrayList<Boolean>();
 		// Message
-		int size = (int) (Math.random() * 448);
 		for (int i = 0; i < size; i++) {
 			input.add(((int) (Math.random() * 2)) == 1 ? true : false);
 		}
@@ -365,196 +439,93 @@ public class SHA1 extends BooleanCircuit {
 		for (char value : binaryString.toCharArray()) {
 			input.add(value == '1' ? true : false);
 		}
-		// Constant input
-		String[] constants = new String[] { Integer.toBinaryString(0x67452301),
+
+		addConstants(input);
+
+		return input;
+	}
+
+	/**
+	 * Generates input from given string
+	 * 
+	 * @return input
+	 */
+	public static List<Boolean> generateInput(String string) {
+		if (string.length() > 55) {
+			throw new IllegalArgumentException(
+					"String longer than 447 bits not supported");
+		}
+		// Construct valid input from string
+		List<Boolean> input = new ArrayList<Boolean>();
+		// Number of bits in message
+		int size = string.length() * 8;
+		// Message
+		String binaryStr;
+		for (char character : string.toCharArray()) {
+			binaryStr = Integer.toBinaryString(character);
+			for (int i = 0; i < 8 - binaryStr.length(); i++) {
+				input.add(false);
+			}
+			for (char value : binaryStr.toCharArray()) {
+				input.add(value == '1' ? true : false);
+			}
+		}
+		// Padding
+		input.add(true);
+		for (int i = size + 1; i < 448; i++) {
+			input.add(false);
+		}
+		// 64-bit representation of input length
+		binaryStr = Integer.toBinaryString(size);
+		for (int i = 0; i < 32; i++) {
+			input.add(false);
+		}
+		for (int i = 0; i < 32 - binaryStr.length(); i++) {
+			input.add(false);
+		}
+		for (char value : binaryStr.toCharArray()) {
+			input.add(value == '1' ? true : false);
+		}
+
+		addConstants(input);
+
+		return input;
+	}
+
+	public static void addConstants(List<Boolean> input) {
+		// IV constants
+		String[] hConstants = new String[] {
+				Integer.toBinaryString(0x67452301),
 				Integer.toBinaryString(0xefcdab89),
 				Integer.toBinaryString(0x98badcfe),
 				Integer.toBinaryString(0x10325476),
 				Integer.toBinaryString(0xc3d2e1f0) };
-		for (String k : constants) {
-			for (int i = 0; i < 32 - k.length(); i++) {
+		for (String h : hConstants) {
+			for (int i = 0; i < 32 - h.length(); i++) {
 				input.add(false);
 			}
-			for (char value : k.toCharArray()) {
+			for (char value : h.toCharArray()) {
 				input.add(value == '1' ? true : false);
 			}
 		}
-		return input;
+		// Additive constants
+		String[] yConstants = new String[] {
+				Integer.toBinaryString(0x5a827999),
+				Integer.toBinaryString(0x6ed9eba1),
+				Integer.toBinaryString(0x8f1bbcdc),
+				Integer.toBinaryString(0xca62c1d6) };
+		for (String y : yConstants) {
+			for (int i = 0; i < 32 - y.length(); i++) {
+				input.add(false);
+			}
+			for (char value : y.toCharArray()) {
+				input.add(value == '1' ? true : false);
+			}
+		}
 	}
 
-	// public static void testAdd(SHA1 circuit) {
-	// // Add input vertices
-	// for (int i = 0; i < 64; i++) {
-	// circuit.addVertex(GateFactory.getInputNode());
-	// }
-	//
-	// // Add output vertices
-	// for (int i = 0; i < 32; i++) {
-	// circuit.addVertex(GateFactory.getOutputNode());
-	// }
-	//
-	// // Add and gates
-	// for (int i = 0; i < 61; i++) {
-	// circuit.addVertex(GateFactory.getAndGate());
-	// }
-	// circuit.setAndIt(circuit.getAndGates().iterator());
-	//
-	// // Add or gates
-	// for (int i = 0; i < 30; i++) {
-	// circuit.addVertex(GateFactory.getOrGate());
-	// }
-	// circuit.setOrIt(circuit.getOrGates().iterator());
-	//
-	// // Add xor gates
-	// for (int i = 0; i < 63; i++) {
-	// circuit.addVertex(GateFactory.getXorGate());
-	// }
-	// circuit.setXorIt(circuit.getXorGates().iterator());
-	//
-	// List<Gate> output = circuit.buildAdder(
-	// circuit.getInputNodes().subList(0, 32), circuit.getInputNodes()
-	// .subList(32, 64));
-	// for (int i = 0; i < output.size(); i++) {
-	// circuit.addEdge(new Edge(), output.get(i), circuit.getOutputNodes()
-	// .get(i), EdgeType.DIRECTED);
-	// }
-	//
-	// int num1 = 123456789, num2 = 987654321;
-	// List<Boolean> input1, input2;
-	// // input1 = new ArrayList<Boolean>();
-	// // input2 = new ArrayList<Boolean>();
-	// // for (char value : "11111111111111111111111111111111".toCharArray()) {
-	// // boolean val = value == '1' ? true : false;
-	// // input1.add(val);
-	// // input2.add(val);
-	// // }
-	// input1 = BooleanCircuit.intToBooleanList(num1);
-	// input2 = BooleanCircuit.intToBooleanList(num2);
-	//
-	// int size1 = input1.size(), size2 = input2.size();
-	// for (int i = 0; i < 32 - size1; i++) {
-	// input1.add(0, false);
-	// }
-	// for (int i = 0; i < 32 - size2; i++) {
-	// input2.add(0, false);
-	// }
-	// for (int i = 0; i < 32; i++) {
-	// circuit.getInputNodes().get(i).setValue(input1.get(i));
-	// circuit.getInputNodes().get(i + 32).setValue(input2.get(i));
-	// }
-	//
-	// System.out.print(BooleanCircuit.booleanListToString(input1) + " + "
-	// + BooleanCircuit.booleanListToString(input2) + " = ");
-	// System.out.println(BooleanCircuit.booleanListToString(circuit
-	// .getOutput()));
-	//
-	// System.out.print(Integer.parseInt(
-	// BooleanCircuit.booleanListToString(input1), 2)
-	// + " + "
-	// + Integer.parseInt(BooleanCircuit.booleanListToString(input2),
-	// 2) + " = ");
-	// System.out.println(Integer.parseInt(
-	// BooleanCircuit.booleanListToString(circuit.getOutput()), 2));
-	// }
-
-	// public static void testOps(SHA1 circuit, Gate.Type type) {
-	// // Add input vertices
-	// for (int i = 0; i < 8; i++) {
-	// circuit.addVertex(GateFactory.getInputNode());
-	// }
-	//
-	// // Build input
-	// List<Boolean> input1 = new ArrayList<Boolean>(4);
-	// input1.add(false);
-	// input1.add(false);
-	// input1.add(true);
-	// input1.add(true);
-	// List<Boolean> input2 = new ArrayList<Boolean>(4);
-	// input2.add(false);
-	// input2.add(true);
-	// input2.add(false);
-	// input2.add(true);
-	//
-	// for (int i = 0; i < 4; i++) {
-	// circuit.getInputNodes().get(i).setValue(input1.get(i));
-	// circuit.getInputNodes().get(i + 4).setValue(input2.get(i));
-	// }
-	//
-	// // Add output vertices
-	// for (int i = 0; i < 4; i++) {
-	// circuit.addVertex(GateFactory.getOutputNode());
-	// }
-	//
-	// List<Gate> output;
-	// String typeStr;
-	//
-	// switch (type) {
-	// case AND:
-	// // Add and gates
-	// for (int i = 0; i < 4; i++) {
-	// circuit.addVertex(GateFactory.getAndGate());
-	// }
-	// circuit.setAndIt(circuit.getAndGates().iterator());
-	// output = circuit.and(circuit.getInputNodes().subList(0, 4), circuit
-	// .getInputNodes().subList(4, 8));
-	// typeStr = "AND";
-	// break;
-	// case OR:
-	// // Add or gates
-	// for (int i = 0; i < 4; i++) {
-	// circuit.addVertex(GateFactory.getOrGate());
-	// }
-	// circuit.setOrIt(circuit.getOrGates().iterator());
-	// output = circuit.or(circuit.getInputNodes().subList(0, 4), circuit
-	// .getInputNodes().subList(4, 8));
-	// typeStr = "OR";
-	// break;
-	// case XOR:
-	// default:
-	// // Add xor gates
-	// for (int i = 0; i < 4; i++) {
-	// circuit.addVertex(GateFactory.getXorGate());
-	// }
-	// circuit.setXorIt(circuit.getXorGates().iterator());
-	// output = circuit.xor(circuit.getInputNodes().subList(0, 4), circuit
-	// .getInputNodes().subList(4, 8));
-	// typeStr = "XOR";
-	// break;
-	// }
-	//
-	// // Add output nodes
-	// for (int i = 0; i < output.size(); i++) {
-	// circuit.addEdge(new Edge(), output.get(i), circuit.getOutputNodes()
-	// .get(i), EdgeType.DIRECTED);
-	// }
-	//
-	// System.out.print(BooleanCircuit.booleanListToString(input1) + " "
-	// + typeStr + " " + BooleanCircuit.booleanListToString(input2)
-	// + " = ");
-	// System.out.println(BooleanCircuit.booleanListToString(circuit
-	// .getOutput()));
-	//
-	// System.out.println(circuit.getOutputNodes());
-	// }
-
-	// public void setNotIt(Iterator<Gate> notIt) {
-	// this.notIt = notIt;
-	// }
-	//
-	// public void setAndIt(Iterator<Gate> andIt) {
-	// this.andIt = andIt;
-	// }
-	//
-	// public void setOrIt(Iterator<Gate> orIt) {
-	// this.orIt = orIt;
-	// }
-	//
-	// public void setXorIt(Iterator<Gate> xorIt) {
-	// this.xorIt = xorIt;
-	// }
-
 	/**
-	 * Creates and displays adder circuit graph
+	 * Creates SHA-1 circuit, gathers output
 	 * 
 	 * @param args
 	 */
@@ -562,45 +533,25 @@ public class SHA1 extends BooleanCircuit {
 		// Get circuit
 		SHA1 circuit = new SHA1();
 
-		// testAdd(circuit);
-		// testOps(new SHA1(), Gate.Type.AND);
-		// testOps(new SHA1(), Gate.Type.OR);
-		// testOps(new SHA1(), Gate.Type.XOR);
-
 		// Construct empty string input
-		List<Boolean> input = new ArrayList<Boolean>();
-		// Padding
-		input.add(true);
-		for (int i = 1; i < 448; i++) {
-			input.add(false);
-		}
-		// 64-bit representation of input length
-		for (int i = 448; i < 512; i++) {
-			input.add(false);
-		}
-		// Constant input
-		String[] constants = new String[] { Integer.toBinaryString(0x67452301),
-				Integer.toBinaryString(0xefcdab89),
-				Integer.toBinaryString(0x98badcfe),
-				Integer.toBinaryString(0x10325476),
-				Integer.toBinaryString(0xc3d2e1f0) };
-		for (String k : constants) {
-			for (int i = 0; i < 32 - k.length(); i++) {
-				input.add(false);
-			}
-			for (char value : k.toCharArray()) {
-				input.add(value == '1' ? true : false);
-			}
-		}
+		List<Boolean> input = generateInput("abc");
 
 		// Valid randomly generated input
-//		List<Boolean> generatedInput = SHA1.generateInput();
-//		System.out.println(BooleanCircuit.booleanListToString(generatedInput));
+		// List<Boolean> generatedInput = SHA1.generateInput();
+		// System.out.println(BooleanCircuit.booleanListToString(generatedInput));
+		
+		// Min-cut
+		// System.out.println("Min-cut");
+		// System.out.println("The edge set is: " + circuit.getMinCutEdges());
 
+		// Input
+		System.out.println("Input:");
+		System.out.println(BooleanCircuit.binarytoHexString(BooleanCircuit
+				.booleanListToString(input)));
 		// Get output, should be da39a3ee5e6b4b0d3255bfef95601890afd80709
+		System.out.println("Output:");
 		System.out.println(BooleanCircuit.binarytoHexString(BooleanCircuit
 				.booleanListToString(circuit.getOutput(input))));
-
 	}
 
 }
