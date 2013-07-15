@@ -1,13 +1,12 @@
 package edu.caar.circuits;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import edu.caar.sha.jung.BooleanCircuit;
-import edu.caar.sha.jung.DisplayCircuit;
 import edu.caar.sha.jung.Edge;
 import edu.caar.sha.jung.Gate;
-import edu.caar.sha.jung.GateFactory;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
@@ -30,50 +29,14 @@ public class TestCircuit extends BooleanCircuit {
 	 * Initializes graph of circuit
 	 */
 	public void initializeGraph() {
-		// Add input vertices
-		for (int i = 0; i < 4; i++) {
-			addVertex(GateFactory.getInputNode());
-		}
-
-		// Add output vertices
-		for (int i = 0; i < 4; i++) {
-			addVertex(GateFactory.getOutputNode());
-		}
-
-		// Add and gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getAndGate());
-		}
-
-		// Add or gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getOrGate());
-		}
-
-		// Add xor gates
-		for (int i = 0; i < 1; i++) {
-			addVertex(GateFactory.getXorGate());
-		}
-
 		// Add edges to create linking structure
-		addEdge(new Edge(), inputNodes.get(0), andGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(1), andGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(2), orGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), inputNodes.get(3), xorGates.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), andGates.get(0), orGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), orGates.get(0), outputNodes.get(0),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), orGates.get(0), xorGates.get(0), EdgeType.DIRECTED);
-		addEdge(new Edge(), xorGates.get(0), outputNodes.get(1),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), xorGates.get(0), outputNodes.get(2),
-				EdgeType.DIRECTED);
-		addEdge(new Edge(), xorGates.get(0), outputNodes.get(3),
-				EdgeType.DIRECTED);
+		Gate or = or(getInputNode(), and(getInputNode(), getInputNode()));
+		Gate xor = xor(getInputNode(), or);
+
+		addEdge(new Edge(), or, getOutputNode(), EdgeType.DIRECTED);
+		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
+		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
+		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
 	}
 
 	/**
@@ -88,9 +51,9 @@ public class TestCircuit extends BooleanCircuit {
 			Gate input = variableInputs.get(0);
 			if (variableInputs.size() == 1) {
 				input.setValue(false);
-				inputs.add(BooleanCircuit.booleanListToString(getInput()));
+				inputs.add(booleanListToString(getInput()));
 				input.setValue(true);
-				inputs.add(BooleanCircuit.booleanListToString(getInput()));
+				inputs.add(booleanListToString(getInput()));
 			} else {
 				List<Gate> removed = new ArrayList<Gate>(variableInputs);
 				removed.remove(0);
@@ -102,6 +65,50 @@ public class TestCircuit extends BooleanCircuit {
 		}
 	}
 
+	public static boolean birthdayAttack(BooleanCircuit circuit) {
+		// Number of terms to search 2^n/2 where n = 4
+		int numTerms = (int) Math.pow(2, 2); // 4 terms
+		int count = 0;
+		HashMap<String, String> table;
+		String[] inputs;
+		String minCutValues;
+
+		while (count < 10) {
+			table = new HashMap<String, String>();
+			count += 1;
+			System.out.println("Iteration number " + count);
+			// Generate 2^(n/2) random terms out of 2^4 terms
+			System.out
+					.println("Generating " + numTerms + " random messages...");
+			inputs = new String[numTerms];
+			for (int i = 0; i < numTerms; i++) {
+				inputs[i] = generateInput(circuit);
+			}
+			System.out.println("All random messages generated.");
+			// Hash all the terms in the term_array
+			System.out.println("Hashing all random messages...");
+			for (String input : inputs) {
+				minCutValues = booleanListToString(circuit
+						.getMinCutValues(input));
+				String value = table.get(minCutValues);
+				if (value != null && !value.equals(input)) {
+					System.out.println("Collision detected!\n" + value
+							+ " --> "
+							+ booleanListToString(circuit.getOutput(value))
+							+ "\n" + input + " --> "
+							+ booleanListToString(circuit.getOutput(input)));
+					return true;
+				} else {
+					table.put(minCutValues, input);
+				}
+			}
+			System.out.println("All messages hashed.");
+			System.out
+					.println("No collisions found. Trying with 2^2 new random terms.");
+		}
+		return false;
+	}
+
 	/**
 	 * Creates and displays adder circuit graph
 	 * 
@@ -109,37 +116,55 @@ public class TestCircuit extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Create circuits
+		TestCircuit tempCircuit;
 		TestCircuit circuit = new TestCircuit();
-		TestCircuit tempCircuit = new TestCircuit();
+
+		// for (int i = 0; i < 10; i++) {
+		// circuit.minCutSetInput();
+		// System.out.println("---Hardcoded Gates---");
+		// for (Gate gate : circuit.getInputNodes()) {
+		// if (gate.isEvaluated()) {
+		// System.out.println(gate);
+		// }
+		// }
+		// System.out.println(generateInput(circuit));
+		// }
 
 		// Display circuit
-		new DisplayCircuit(tempCircuit).display();
+		// new DisplayCircuit(circuit).display();
 
-		// Hardcode inputs
-		tempCircuit.minCutEvaluateCircuit();
-
-		// Display circuit
-		new DisplayCircuit(tempCircuit).display();
-
-		// Simplify circuit
-		List<Gate> variableInputs = tempCircuit.simplifyCircuit();
-		System.out.println("Variable Inputs: " + variableInputs);
-
-		// Display circuit
-		new DisplayCircuit(tempCircuit).display();
-
-		// Print collisions
-		List<String> inputs = new ArrayList<String>((int) Math.pow(2,
-				variableInputs.size()));
-		tempCircuit.generateInputs(variableInputs, inputs);
-		List<String> outputs = new ArrayList<String>((int) Math.pow(2,
-				variableInputs.size()));
-		for (String input : inputs) {
-			outputs.add(BooleanCircuit.booleanListToString(circuit
-					.getOutput(BooleanCircuit.StringToBooleanList(input))));
+		// Birthday attack
+		System.out
+				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
+		while (!birthdayAttack(circuit)) {
 		}
-		System.out.println("Inputs with collisions: " + inputs + " --> "
-				+ outputs);
+
+		System.out
+				.println("---------BIRTHDAY ATTACK ON SIMPLIFIED CIRCUITS----------");
+		do {
+			// New circuit to be simplified
+			tempCircuit = new TestCircuit();
+			// Hardcode inputs
+			tempCircuit.minCutSetInput();
+			// Simplify circuit
+			tempCircuit.simplifyCircuit();
+		} while (!birthdayAttack(tempCircuit));
+
+		// // Simplify circuit
+		// List<Gate> variableInputs = tempCircuit.simplifyCircuit();
+		// System.out.println("Variable Inputs: " + variableInputs);
+		//
+		// // Print collisions
+		// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+		// variableInputs.size()));
+		// tempCircuit.generateInputs(variableInputs, inputs);
+		// List<String> outputs = new ArrayList<String>((int) Math.pow(2,
+		// variableInputs.size()));
+		// for (String input : inputs) {
+		// outputs.add(booleanListToString(circuit.getOutput(input)));
+		// }
+		// System.out.println("Inputs with collisions: " + inputs + " --> "
+		// + outputs);
 	}
 
 }

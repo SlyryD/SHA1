@@ -73,6 +73,15 @@ public class Gate {
 	}
 
 	/**
+	 * Reset gate evaluated to false
+	 * 
+	 * @param evaluated
+	 */
+	public void resetEvaluated() {
+		evaluated = false;
+	}
+
+	/**
 	 * Returns id number of gate
 	 * 
 	 * @return number
