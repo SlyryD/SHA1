@@ -16,17 +16,16 @@ public class SHA1 extends BooleanCircuit {
 	// Serialization ID
 	private static final long serialVersionUID = -3025896134713478273L;
 
-	List<List<Gate>> debugList;
+	// Hash table for birthday attack
+	HashMap<String, String> table;
 
 	/**
 	 * Constructs SHA-1 circuit graph
 	 */
 	public SHA1() {
 		super();
-
-		debugList = new ArrayList<List<Gate>>();
-
 		initializeGraph();
+		table = new HashMap<String, String>();
 	}
 
 	/**
@@ -101,10 +100,6 @@ public class SHA1 extends BooleanCircuit {
 					wVariables.set(j, wVariables.get(j - 1));
 				}
 			}
-			// TODO: Remove
-			for (List<Gate> list : wVariables) {
-				debugList.add(list);
-			}
 		}
 
 		// Round 2
@@ -125,10 +120,6 @@ public class SHA1 extends BooleanCircuit {
 				} else {
 					wVariables.set(j, wVariables.get(j - 1));
 				}
-			}
-			// TODO: Remove
-			for (List<Gate> list : wVariables) {
-				debugList.add(list);
 			}
 		}
 
@@ -151,10 +142,6 @@ public class SHA1 extends BooleanCircuit {
 					wVariables.set(j, wVariables.get(j - 1));
 				}
 			}
-			// TODO: Remove
-			for (List<Gate> list : wVariables) {
-				debugList.add(list);
-			}
 		}
 
 		// Round 4
@@ -175,10 +162,6 @@ public class SHA1 extends BooleanCircuit {
 				} else {
 					wVariables.set(j, wVariables.get(j - 1));
 				}
-			}
-			// TODO: Remove
-			for (List<Gate> list : wVariables) {
-				debugList.add(list);
 			}
 		}
 
@@ -278,16 +261,38 @@ public class SHA1 extends BooleanCircuit {
 		return newList;
 	}
 
+	// Fix input in SHA-1 circuit
+	public void fixInput() {
+		int length = 64;
+		setValue(inputNodes.get(length), true);
+		for (int i = length + 1; length < 448; i++) {
+			setValue(inputNodes.get(i), false);
+		}
+		String lengthStr = Integer.toBinaryString(length);
+		int strLength = lengthStr.length();
+		for (int i = 448; i < 512 - strLength; i++) {
+			setValue(inputNodes.get(i), false);
+		}
+		for (int i = 512 - strLength; i < 512; i++) {
+			setValue(inputNodes.get(i),
+					lengthStr.charAt(i - 512 + strLength) == '1');
+		}
+		// Fix constants
+		List<Boolean> constants = getConstants();
+		for (int i = 512; i < 800; i++) {
+			setValue(inputNodes.get(i), constants.get(i - 512));
+		}
+	}
+
 	public void birthdayAttack() {
 		// Number of terms to search 2^n/2 where n = 448
 		int numTerms = (int) Math.pow(2, 22); // too many terms
 		int count = 0;
-		HashMap<String, String> table;
+
 		String[] inputs;
 		String minCutValues;
 
 		while (true) {
-			table = new HashMap<String, String>();
 			count += 1;
 			System.out.println("Iteration number " + count);
 			// Generate 2^(n/2) random terms out of 2^4 terms
@@ -295,7 +300,7 @@ public class SHA1 extends BooleanCircuit {
 					.println("Generating " + numTerms + " random messages...");
 			inputs = new String[numTerms];
 			for (int i = 0; i < numTerms; i++) {
-				inputs[i] = booleanListToString(generateInput());
+				inputs[i] = booleanListToString(generateSHA1Input());
 			}
 			System.out.println("All random messages generated.");
 			// Hash all the terms in the term_array
@@ -329,8 +334,8 @@ public class SHA1 extends BooleanCircuit {
 	 * 
 	 * @return input
 	 */
-	public static List<Boolean> generateInput() {
-		return generateInput(getRandInt(448));
+	public static List<Boolean> generateSHA1Input() {
+		return generateSHA1Input(getRandInt(448));
 	}
 
 	/**
@@ -338,7 +343,7 @@ public class SHA1 extends BooleanCircuit {
 	 * 
 	 * @return input
 	 */
-	public static List<Boolean> generateInput(int size) {
+	public static List<Boolean> generateSHA1Input(int size) {
 		// Construct valid random input
 		List<Boolean> input = new ArrayList<Boolean>();
 		// Message
@@ -352,17 +357,14 @@ public class SHA1 extends BooleanCircuit {
 		}
 		// 64-bit representation of input length
 		String binaryString = Integer.toBinaryString(size);
-		for (int i = 0; i < 32; i++) {
-			input.add(false);
-		}
-		for (int i = 0; i < 32 - binaryString.length(); i++) {
+		for (int i = 0; i < 64 - binaryString.length(); i++) {
 			input.add(false);
 		}
 		for (int i = 0; i < binaryString.length(); i++) {
 			input.add(binaryString.charAt(i) == '1');
 		}
 
-		addConstants(input);
+		input.addAll(getConstants());
 
 		return input;
 	}
@@ -372,7 +374,7 @@ public class SHA1 extends BooleanCircuit {
 	 * 
 	 * @return input
 	 */
-	public static List<Boolean> generateInput(String string) {
+	public static List<Boolean> generateSHA1Input(String string) {
 		if (string.length() > 55) {
 			throw new IllegalArgumentException(
 					"String longer than 447 bits not supported");
@@ -399,22 +401,20 @@ public class SHA1 extends BooleanCircuit {
 		}
 		// 64-bit representation of input length
 		binaryStr = Integer.toBinaryString(size);
-		for (int i = 0; i < 32; i++) {
-			input.add(false);
-		}
-		for (int i = 0; i < 32 - binaryStr.length(); i++) {
+		for (int i = 0; i < 64 - binaryStr.length(); i++) {
 			input.add(false);
 		}
 		for (int i = 0; i < binaryStr.length(); i++) {
 			input.add(binaryStr.charAt(i) == '1');
 		}
 
-		addConstants(input);
+		input.addAll(getConstants());
 
 		return input;
 	}
 
-	public static void addConstants(List<Boolean> input) {
+	public static List<Boolean> getConstants() {
+		List<Boolean> input = new ArrayList<Boolean>(288);
 		// IV constants
 		String[] hConstants = new String[] {
 				Integer.toBinaryString(0x67452301),
@@ -444,6 +444,7 @@ public class SHA1 extends BooleanCircuit {
 				input.add(y.charAt(i) == '1');
 			}
 		}
+		return input;
 	}
 
 	/**
@@ -456,15 +457,7 @@ public class SHA1 extends BooleanCircuit {
 		SHA1 circuit = new SHA1();
 
 		// Construct empty string input
-		List<Boolean> input = generateInput("abc");
-
-		// Valid randomly generated input
-		// List<Boolean> generatedInput = SHA1.generateInput();
-		// System.out.println(booleanListToString(generatedInput));
-
-		// Min-cut
-		// System.out.println("Min-cut");
-		// System.out.println("The edge set is: " + circuit.getMinCutEdges());
+		List<Boolean> input = generateSHA1Input();
 
 		// Input
 		System.out.println("Input:");
@@ -475,116 +468,11 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println(binarytoHexString(booleanListToString(circuit
 				.getOutput(input))));
 
-		// Print debug
-		System.out.println("\tA\t\tB\t\tC\t\tD\t\tE");
-		for (int i = 0; i < 80; i++) {
-			System.out.print("t = " + i + ":\t");
-			System.out.print(binarytoHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(5 * i)))) + "\t");
-			System.out.print(binarytoHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(5 * i + 1)))) + "\t");
-			System.out.print(binarytoHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(5 * i + 2)))) + "\t");
-			System.out.print(binarytoHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(5 * i + 3)))) + "\t");
-			System.out.print(binarytoHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(5 * i + 4)))) + "\t");
-			System.out.println();
-		}
+		// Fix inputs and simplify circuit
 
-		System.out.println("------ArrayList Test------");
-		SHA1 bc = new SHA1();
-		bc.setInput(generateInput("abc"));
-		// Get constants
-		List<Boolean> constants = new ArrayList<Boolean>();
-		addConstants(constants);
-		List<Gate> listA = new ArrayList<Gate>(32);
-		for (int i = 0; i < 32; i++) {
-			Gate inputNode = bc.getInputNode();
-			bc.setValue(inputNode, constants.get(i));
-			listA.add(inputNode);
-		}
-		List<Gate> listB = new ArrayList<Gate>(32);
-		for (int i = 32; i < 64; i++) {
-			Gate inputNode = bc.getInputNode();
-			bc.setValue(inputNode, constants.get(i));
-			listB.add(inputNode);
-		}
-		List<Gate> listC = new ArrayList<Gate>(32);
-		for (int i = 64; i < 96; i++) {
-			Gate inputNode = bc.getInputNode();
-			bc.setValue(inputNode, constants.get(i));
-			listC.add(inputNode);
-		}
-		List<Gate> listD = new ArrayList<Gate>(32);
-		for (int i = 96; i < 128; i++) {
-			Gate inputNode = bc.getInputNode();
-			bc.setValue(inputNode, constants.get(i));
-			listD.add(inputNode);
-		}
-		List<Gate> listE = new ArrayList<Gate>(32);
-		for (int i = 128; i < 160; i++) {
-			Gate inputNode = bc.getInputNode();
-			bc.setValue(inputNode, constants.get(i));
-			listE.add(inputNode);
-		}
-		System.out.println(listA);
-		System.out.println(listB);
-		System.out.println(listC);
-		System.out.println(listD);
-		System.out.println(listE);
-		System.out.println("A:\t\t"
-				+ booleanListToString(bc.getGateValues(listA)));
-		System.out.println("B:\t\t"
-				+ booleanListToString(bc.getGateValues(listB)));
-		System.out.println("C:\t\t"
-				+ booleanListToString(bc.getGateValues(listC)));
-		System.out.println("D:\t\t"
-				+ booleanListToString(bc.getGateValues(listD)));
-		System.out.println("E:\t\t"
-				+ booleanListToString(bc.getGateValues(listE)));
-		List<Gate> rotlGates = bc.rotl(listA, 5);
-		System.out.println("rotl(A, 5):\t"
-				+ booleanListToString(bc.getGateValues(rotlGates)));
-		List<Gate> fGates = bc.fFunction(listB, listC, listD);
-		bc.evaluateCircuitToGates(fGates);
-		// System.out.println("f(B, C, D):\t"
-		// + booleanListToString(bc.getGateValues(fGates)));
-		// System.out.println("E:\t\t"
-		// + booleanListToString(bc.getGateValues(listE)));
-		List<Gate> x0 = bc.getInputNodes().subList(0, 32);
-		// System.out.println("X[0]:\t\t"
-		// + booleanListToString(bc.getGateValues(x0)));
-		List<Gate> y1 = bc.getInputNodes().subList(672, 704);
-		// System.out.println("y1:\t\t"
-		// + booleanListToString(bc.getGateValues(y1)));
-		List<Gate> addGates = bc.add(x0, y1);
-		bc.evaluateCircuitToGates(addGates);
-		// System.out.println("x[0] + y1:\t" +
-		// booleanListToString(bc.getGateValues(addGates)));
-		addGates = bc.add(listE, addGates);
-		bc.evaluateCircuitToGates(addGates);
-		// System.out.println("E + x[0] + y1:\t" +
-		// booleanListToString(bc.getGateValues(addGates)));
-		addGates = bc.add(fGates, addGates);
-		bc.evaluateCircuitToGates(addGates);
-		System.out.println("f + E + x0 + y1:"
-				+ booleanListToString(bc.getGateValues(addGates)));
-		addGates = bc.add(rotlGates, addGates);
-		bc.evaluateCircuitToGates(addGates);
-		System.out.println("rotl5+f+E+x0+y1:"
-				+ booleanListToString(bc.getGateValues(addGates)));
-		System.out.println("rotl5+f+E+x0+y1:"
-				+ Integer.toHexString(Integer.parseInt(
-						booleanListToString(bc.getGateValues(addGates)), 2)));
-		// List<Gate> gates = bc.hFunction(listA, listB, listC);
-		// bc.evaluateCircuitToGates(gates);
-		// System.out.println(booleanListToString(bc.getGateValues(gates)));
-		// System.out.println(listA);
-		// System.out.println(listB);
-		// System.out.println(listC);
-		// System.out.println(listD);
-		// System.out.println(listE);
+		// Min-cut
+		// System.out.println("Min-cut");
+		// System.out.println("The edge set is: " + circuit.getMinCutEdges());
 	}
 
 }

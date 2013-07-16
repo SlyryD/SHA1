@@ -122,7 +122,7 @@ public class Adder extends BooleanCircuit {
 					.println("Generating " + numTerms + " random messages...");
 			inputs = new String[numTerms];
 			for (int i = 0; i < numTerms; i++) {
-				inputs[i] = generateInput(circuit);
+				inputs[i] = circuit.generateInput();
 			}
 			System.out.println("All random messages generated.");
 			// Hash all the terms in the term_array

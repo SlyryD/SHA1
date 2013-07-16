@@ -149,6 +149,24 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	}
 
 	/* --------------------- GET/SET INPUT/OUTPUT METHODS --------------------- */
+	
+	/**
+	 * Generates random input with fixed values for circuit
+	 * 
+	 * @param circuit
+	 * @return input
+	 */
+	public String generateInput() {
+		StringBuilder sb = new StringBuilder();
+		for (Gate gate : inputNodes) {
+			if (fixed.containsKey(gate)) {
+				sb.append(values.get(gate) ? "1" : "0");
+			} else {
+				sb.append(getRandBoolean() ? "1" : "0");
+			}
+		}
+		return sb.toString();
+	}
 
 	/**
 	 * Set input of circuit
@@ -989,25 +1007,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	}
 
 	/* -------------------- STATIC HELPER METHODS -------------------- */
-
-	/**
-	 * Generates random input with fixed values for circuit
-	 * 
-	 * @param circuit
-	 * @return input
-	 */
-	public static String generateInput(BooleanCircuit circuit) {
-		StringBuilder sb = new StringBuilder();
-		for (Gate gate : circuit.getInputNodes()) {
-			if (circuit.fixed.containsKey(gate)) {
-				sb.append(circuit.values.get(gate) ? "1" : "0");
-			} else {
-				sb.append(getRandBoolean() ? "1" : "0");
-			}
-		}
-		return sb.toString();
-	}
-
+	
 	/**
 	 * Returns random boolean
 	 * 

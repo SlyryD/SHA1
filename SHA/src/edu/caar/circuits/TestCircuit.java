@@ -18,11 +18,14 @@ public class TestCircuit extends BooleanCircuit {
 
 	private static final long serialVersionUID = 2908552618552078249L;
 
+	HashMap<String, String> table;
+	
 	/**
 	 * Constructs and initializes circuit
 	 */
 	public TestCircuit() {
 		initializeGraph();
+		table = new HashMap<String, String>();
 	}
 
 	/**
@@ -65,16 +68,14 @@ public class TestCircuit extends BooleanCircuit {
 		}
 	}
 
-	public static boolean birthdayAttack(BooleanCircuit circuit) {
+	public boolean birthdayAttack() {
 		// Number of terms to search 2^n/2 where n = 4
 		int numTerms = (int) Math.pow(2, 2); // 4 terms
 		int count = 0;
-		HashMap<String, String> table;
 		String[] inputs;
 		String minCutValues;
 
 		while (count < 10) {
-			table = new HashMap<String, String>();
 			count += 1;
 			System.out.println("Iteration number " + count);
 			// Generate 2^(n/2) random terms out of 2^4 terms
@@ -82,21 +83,20 @@ public class TestCircuit extends BooleanCircuit {
 					.println("Generating " + numTerms + " random messages...");
 			inputs = new String[numTerms];
 			for (int i = 0; i < numTerms; i++) {
-				inputs[i] = generateInput(circuit);
+				inputs[i] = generateInput();
 			}
 			System.out.println("All random messages generated.");
 			// Hash all the terms in the term_array
 			System.out.println("Hashing all random messages...");
 			for (String input : inputs) {
-				minCutValues = booleanListToString(circuit
-						.getMinCutValues(input));
+				minCutValues = booleanListToString(getMinCutValues(input));
 				String value = table.get(minCutValues);
 				if (value != null && !value.equals(input)) {
 					System.out.println("Collision detected!\n" + value
 							+ " --> "
-							+ booleanListToString(circuit.getOutput(value))
+							+ booleanListToString(getOutput(value))
 							+ "\n" + input + " --> "
-							+ booleanListToString(circuit.getOutput(input)));
+							+ booleanListToString(getOutput(input)));
 					return true;
 				} else {
 					table.put(minCutValues, input);
@@ -136,7 +136,7 @@ public class TestCircuit extends BooleanCircuit {
 		// Birthday attack
 		System.out
 				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
-		while (!birthdayAttack(circuit)) {
+		while (!circuit.birthdayAttack()) {
 		}
 
 		System.out
@@ -148,7 +148,7 @@ public class TestCircuit extends BooleanCircuit {
 			tempCircuit.minCutSetInput();
 			// Simplify circuit
 			tempCircuit.simplifyCircuit();
-		} while (!birthdayAttack(tempCircuit));
+		} while (!tempCircuit.birthdayAttack());
 
 		// // Simplify circuit
 		// List<Gate> variableInputs = tempCircuit.simplifyCircuit();
