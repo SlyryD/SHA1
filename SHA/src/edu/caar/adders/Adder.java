@@ -71,9 +71,9 @@ public class Adder extends BooleanCircuit {
 		ListIterator<Boolean> it1 = input1.listIterator(input1.size()), it2 = input2
 				.listIterator(input2.size());
 		for (int i = 0; i < size; i++) {
-			inputNodes.get(2 * i).setValue(
+			values.put(inputNodes.get(2 * i),
 					it1.hasPrevious() ? it1.previous() : false);
-			inputNodes.get(2 * i + 1).setValue(
+			values.put(inputNodes.get(2 * i),
 					it2.hasPrevious() ? it2.previous() : false);
 		}
 	}
@@ -84,8 +84,8 @@ public class Adder extends BooleanCircuit {
 		while (outputIt.hasNext()) {
 			Gate gate = outputIt.next();
 			if (outputIt.hasNext()) {
-				sb.insert(0, gate.getValue() == true ? "1" : "0");
-			} else if (gate.getValue() == true) {
+				sb.insert(0, values.get(gate) == true ? "1" : "0");
+			} else if (values.get(gate) == true) {
 				sb.insert(0, "1");
 			}
 		}
@@ -96,18 +96,18 @@ public class Adder extends BooleanCircuit {
 	 * Sets first few bites of inputs
 	 */
 	public void setInput() {
-		resetEvaluated();
-		for (int i = 0; i < 12; i++) {
-			inputNodes.get(i).setValue(false);
-			fixed.add(inputNodes.get(i));
-			inputNodes.get(i + 32).setValue(false);
-			fixed.add(inputNodes.get(i + 32));
+		resetValues();
+		for (int i = 0; i < 9; i++) {
+			values.put(inputNodes.get(i), false);
+			fixed.put(inputNodes.get(i), true);
+			values.put(inputNodes.get(i + 32), false);
+			fixed.put(inputNodes.get(i + 32), true);
 		}
 	}
 
 	public static boolean birthdayAttack(BooleanCircuit circuit) {
 		// Number of terms to search 2^n/2 where n = 64
-		int numTerms = (int) Math.pow(2, 20);
+		int numTerms = (int) Math.pow(2, 16);
 		int count = 0;
 		HashMap<String, String> table;
 		String[] inputs;
@@ -160,18 +160,21 @@ public class Adder extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// String representations of numbers to be added
-		int num1 = 2000000000, num2 = 1;
+		// int num1 = 2000000000, num2 = 1;
 
 		// Create adder
-		Adder tempCircuit = new Adder();
+		// Adder tempCircuit = new Adder();
 		Adder circuit = new Adder();
 
+		long startTime = System.nanoTime();
 		circuit.setInput();
 		// Birthday attack
 		System.out
 				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
 		while (!birthdayAttack(circuit)) {
 		}
+		long endTime = System.nanoTime();
+		System.out.println(endTime - startTime + "ns");
 		//
 		// // Evaluated circuit
 		// tempCircuit.evaluateCircuit();

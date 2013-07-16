@@ -16,11 +16,16 @@ public class SHA1 extends BooleanCircuit {
 	// Serialization ID
 	private static final long serialVersionUID = -3025896134713478273L;
 
+	List<List<Gate>> debugList;
+
 	/**
 	 * Constructs SHA-1 circuit graph
 	 */
 	public SHA1() {
 		super();
+
+		debugList = new ArrayList<List<Gate>>();
+
 		initializeGraph();
 	}
 
@@ -81,68 +86,100 @@ public class SHA1 extends BooleanCircuit {
 		for (int i = 0; i < 20; i++) {
 			// t := (rotl5(A) + f(B, C, D) + E + X[i] + y1)
 			tList = add(
-					rotl(new ArrayList<Gate>(wVariables.get(0)), 5),
+					rotl(wVariables.get(0), 5),
 					add(fFunction(wVariables.get(1), wVariables.get(2),
 							wVariables.get(3)),
-							add(new ArrayList<Gate>(wVariables.get(4)),
-									add(xStorage.get(i), yConstants.get(1)))));
+							add(wVariables.get(4),
+									add(xStorage.get(i), yConstants.get(0)))));
 			// (A, B, C, D, E) := (t, A, rotl30(B), C, D)
-			for (int j = 4; j > 0; j--) {
-				wVariables.set(j, j == 2 ? rotl(wVariables.get(j - 1), 30)
-						: wVariables.get(j - 1));
+			for (int j = 4; j >= 0; j--) {
+				if (j == 2) {
+					wVariables.set(j, rotl(wVariables.get(j - 1), 30));
+				} else if (j == 0) {
+					wVariables.set(j, tList);
+				} else {
+					wVariables.set(j, wVariables.get(j - 1));
+				}
 			}
-			wVariables.set(0, tList);
+			// TODO: Remove
+			for (List<Gate> list : wVariables) {
+				debugList.add(list);
+			}
 		}
 
 		// Round 2
 		for (int i = 20; i < 40; i++) {
 			// t := (rotl5(A) + h(B, C, D) + E + X[i] + y2)
 			tList = add(
-					rotl(new ArrayList<Gate>(wVariables.get(0)), 5),
+					rotl(wVariables.get(0), 5),
 					add(hFunction(wVariables.get(1), wVariables.get(2),
 							wVariables.get(3)),
 							add(wVariables.get(4),
 									add(xStorage.get(i), yConstants.get(1)))));
 			// (A, B, C, D, E) := (t, A, rotl30(B), C, D)
-			for (int j = 4; j > 0; j--) {
-				wVariables.set(j, j == 2 ? rotl(wVariables.get(j - 1), 30)
-						: wVariables.get(j - 1));
+			for (int j = 4; j >= 0; j--) {
+				if (j == 2) {
+					wVariables.set(j, rotl(wVariables.get(j - 1), 30));
+				} else if (j == 0) {
+					wVariables.set(j, tList);
+				} else {
+					wVariables.set(j, wVariables.get(j - 1));
+				}
 			}
-			wVariables.set(0, tList);
+			// TODO: Remove
+			for (List<Gate> list : wVariables) {
+				debugList.add(list);
+			}
 		}
 
 		// Round 3
 		for (int i = 40; i < 60; i++) {
 			// t := (rotl5(A) + g(B, C, D) + E + X[i] + y3)
 			tList = add(
-					rotl(new ArrayList<Gate>(wVariables.get(0)), 5),
+					rotl(wVariables.get(0), 5),
 					add(gFunction(wVariables.get(1), wVariables.get(2),
 							wVariables.get(3)),
 							add(wVariables.get(4),
-									add(xStorage.get(i), yConstants.get(1)))));
+									add(xStorage.get(i), yConstants.get(2)))));
 			// (A, B, C, D, E) := (t, A, rotl30(B), C, D)
-			for (int j = 4; j > 0; j--) {
-				wVariables.set(j, j == 2 ? rotl(wVariables.get(j - 1), 30)
-						: wVariables.get(j - 1));
+			for (int j = 4; j >= 0; j--) {
+				if (j == 2) {
+					wVariables.set(j, rotl(wVariables.get(j - 1), 30));
+				} else if (j == 0) {
+					wVariables.set(j, tList);
+				} else {
+					wVariables.set(j, wVariables.get(j - 1));
+				}
 			}
-			wVariables.set(0, tList);
+			// TODO: Remove
+			for (List<Gate> list : wVariables) {
+				debugList.add(list);
+			}
 		}
 
 		// Round 4
 		for (int i = 60; i < 80; i++) {
 			// t := (rotl5(A) + h(B, C, D) + E + X[i] + y4)
 			tList = add(
-					rotl(new ArrayList<Gate>(wVariables.get(0)), 5),
+					rotl(wVariables.get(0), 5),
 					add(hFunction(wVariables.get(1), wVariables.get(2),
 							wVariables.get(3)),
 							add(wVariables.get(4),
-									add(xStorage.get(i), yConstants.get(1)))));
+									add(xStorage.get(i), yConstants.get(3)))));
 			// (A, B, C, D, E) := (t, A, rotl30(B), C, D)
-			for (int j = 4; j > 0; j--) {
-				wVariables.set(j, j == 2 ? rotl(wVariables.get(j - 1), 30)
-						: wVariables.get(j - 1));
+			for (int j = 4; j >= 0; j--) {
+				if (j == 2) {
+					wVariables.set(j, rotl(wVariables.get(j - 1), 30));
+				} else if (j == 0) {
+					wVariables.set(j, tList);
+				} else {
+					wVariables.set(j, wVariables.get(j - 1));
+				}
 			}
-			wVariables.set(0, tList);
+			// TODO: Remove
+			for (List<Gate> list : wVariables) {
+				debugList.add(list);
+			}
 		}
 
 		// Update chaining variables
@@ -157,7 +194,8 @@ public class SHA1 extends BooleanCircuit {
 	}
 
 	/**
-	 * Creates circuit which adds two 32-bit numbers (mod 2^32)
+	 * Creates circuit which adds two 32-bit numbers (mod 2^32). Does not modify
+	 * original lists.
 	 * 
 	 * @param input1
 	 * @param input2
@@ -185,47 +223,50 @@ public class SHA1 extends BooleanCircuit {
 	}
 
 	/**
-	 * f(B, C, D) = ((B and C) or (not(B) and D))
+	 * f(B, C, D) = ((B and C) or (not(B) and D)). Does not modify original
+	 * lists.
 	 * 
-	 * @param input1
-	 * @param input2
-	 * @param input3
-	 * @return f(input1, input2, input3)
+	 * @param inputB
+	 * @param inputC
+	 * @param inputD
+	 * @return f(inputB, inputC, inputD)
 	 */
-	public List<Gate> fFunction(List<Gate> input1, List<Gate> input2,
-			List<Gate> input3) {
-		return or(and(input1, input2), and(not(input1), input3));
+	public List<Gate> fFunction(List<Gate> inputB, List<Gate> inputC,
+			List<Gate> inputD) {
+		return or(and(inputB, inputC), and(not(inputB), inputD));
 	}
 
 	/**
-	 * g(B, C, D) = ((B and C) or (B and D) or (C and D))
+	 * g(B, C, D) = ((B and C) or (B and D) or (C and D)). Does not modify
+	 * original lists.
 	 * 
-	 * @param input1
-	 * @param input2
-	 * @param input3
-	 * @return g(input1, input2, input3)
+	 * @param inputB
+	 * @param inputC
+	 * @param inputD
+	 * @return g(inputB, inputC, inputD)
 	 */
-	public List<Gate> gFunction(List<Gate> input1, List<Gate> input2,
-			List<Gate> input3) {
-		return or(and(input1, input2),
-				or(and(input1, input3), and(input2, input3)));
+	public List<Gate> gFunction(List<Gate> inputB, List<Gate> inputC,
+			List<Gate> inputD) {
+		return or(and(inputB, inputC),
+				or(and(inputB, inputD), and(inputC, inputD)));
 	}
 
 	/**
-	 * h(B, C, D) = (B xor C xor D)
+	 * h(B, C, D) = (B xor C xor D). Does not modify original lists.
 	 * 
-	 * @param input1
-	 * @param input2
-	 * @param input3
-	 * @return h(input1, input2, input3)
+	 * @param inputB
+	 * @param inputC
+	 * @param inputD
+	 * @return h(inputB, inputC, inputD)
 	 */
-	public List<Gate> hFunction(List<Gate> input1, List<Gate> input2,
-			List<Gate> input3) {
-		return xor(input1, xor(input2, input3));
+	public List<Gate> hFunction(List<Gate> inputB, List<Gate> inputC,
+			List<Gate> inputD) {
+		return xor(inputB, xor(inputC, inputD));
 	}
 
 	/**
-	 * Returns list of gates rotated left given numbers
+	 * Returns list of gates rotated left given numbers. Does not affect
+	 * original list.
 	 * 
 	 * @param list
 	 * @param number
@@ -238,8 +279,8 @@ public class SHA1 extends BooleanCircuit {
 	}
 
 	public void birthdayAttack() {
-		// Number of terms to search 2^n/2 where n = 4
-		int numTerms = (int) Math.pow(2, 2); // 4 terms
+		// Number of terms to search 2^n/2 where n = 448
+		int numTerms = (int) Math.pow(2, 22); // too many terms
 		int count = 0;
 		HashMap<String, String> table;
 		String[] inputs;
@@ -318,7 +359,7 @@ public class SHA1 extends BooleanCircuit {
 			input.add(false);
 		}
 		for (int i = 0; i < binaryString.length(); i++) {
-			input.add(binaryString.charAt(i) == '1' ? true : false);
+			input.add(binaryString.charAt(i) == '1');
 		}
 
 		addConstants(input);
@@ -348,7 +389,7 @@ public class SHA1 extends BooleanCircuit {
 				input.add(false);
 			}
 			for (int j = 0; j < binaryStr.length(); j++) {
-				input.add(binaryStr.charAt(j) == '1' ? true : false);
+				input.add(binaryStr.charAt(j) == '1');
 			}
 		}
 		// Padding
@@ -365,7 +406,7 @@ public class SHA1 extends BooleanCircuit {
 			input.add(false);
 		}
 		for (int i = 0; i < binaryStr.length(); i++) {
-			input.add(binaryStr.charAt(i) == '1' ? true : false);
+			input.add(binaryStr.charAt(i) == '1');
 		}
 
 		addConstants(input);
@@ -386,7 +427,7 @@ public class SHA1 extends BooleanCircuit {
 				input.add(false);
 			}
 			for (int i = 0; i < h.length(); i++) {
-				input.add(h.charAt(i) == '1' ? true : false);
+				input.add(h.charAt(i) == '1');
 			}
 		}
 		// Additive constants
@@ -400,7 +441,7 @@ public class SHA1 extends BooleanCircuit {
 				input.add(false);
 			}
 			for (int i = 0; i < y.length(); i++) {
-				input.add(y.charAt(i) == '1' ? true : false);
+				input.add(y.charAt(i) == '1');
 			}
 		}
 	}
@@ -428,10 +469,122 @@ public class SHA1 extends BooleanCircuit {
 		// Input
 		System.out.println("Input:");
 		System.out.println(binarytoHexString(booleanListToString(input)));
-		// Get output, should be da39a3ee5e6b4b0d3255bfef95601890afd80709
+
+		// Output
 		System.out.println("Output:");
 		System.out.println(binarytoHexString(booleanListToString(circuit
 				.getOutput(input))));
+
+		// Print debug
+		System.out.println("\tA\t\tB\t\tC\t\tD\t\tE");
+		for (int i = 0; i < 80; i++) {
+			System.out.print("t = " + i + ":\t");
+			System.out.print(binarytoHexString(booleanListToString(circuit
+					.getGateValues(circuit.debugList.get(5 * i)))) + "\t");
+			System.out.print(binarytoHexString(booleanListToString(circuit
+					.getGateValues(circuit.debugList.get(5 * i + 1)))) + "\t");
+			System.out.print(binarytoHexString(booleanListToString(circuit
+					.getGateValues(circuit.debugList.get(5 * i + 2)))) + "\t");
+			System.out.print(binarytoHexString(booleanListToString(circuit
+					.getGateValues(circuit.debugList.get(5 * i + 3)))) + "\t");
+			System.out.print(binarytoHexString(booleanListToString(circuit
+					.getGateValues(circuit.debugList.get(5 * i + 4)))) + "\t");
+			System.out.println();
+		}
+
+		System.out.println("------ArrayList Test------");
+		SHA1 bc = new SHA1();
+		bc.setInput(generateInput("abc"));
+		// Get constants
+		List<Boolean> constants = new ArrayList<Boolean>();
+		addConstants(constants);
+		List<Gate> listA = new ArrayList<Gate>(32);
+		for (int i = 0; i < 32; i++) {
+			Gate inputNode = bc.getInputNode();
+			bc.setValue(inputNode, constants.get(i));
+			listA.add(inputNode);
+		}
+		List<Gate> listB = new ArrayList<Gate>(32);
+		for (int i = 32; i < 64; i++) {
+			Gate inputNode = bc.getInputNode();
+			bc.setValue(inputNode, constants.get(i));
+			listB.add(inputNode);
+		}
+		List<Gate> listC = new ArrayList<Gate>(32);
+		for (int i = 64; i < 96; i++) {
+			Gate inputNode = bc.getInputNode();
+			bc.setValue(inputNode, constants.get(i));
+			listC.add(inputNode);
+		}
+		List<Gate> listD = new ArrayList<Gate>(32);
+		for (int i = 96; i < 128; i++) {
+			Gate inputNode = bc.getInputNode();
+			bc.setValue(inputNode, constants.get(i));
+			listD.add(inputNode);
+		}
+		List<Gate> listE = new ArrayList<Gate>(32);
+		for (int i = 128; i < 160; i++) {
+			Gate inputNode = bc.getInputNode();
+			bc.setValue(inputNode, constants.get(i));
+			listE.add(inputNode);
+		}
+		System.out.println(listA);
+		System.out.println(listB);
+		System.out.println(listC);
+		System.out.println(listD);
+		System.out.println(listE);
+		System.out.println("A:\t\t"
+				+ booleanListToString(bc.getGateValues(listA)));
+		System.out.println("B:\t\t"
+				+ booleanListToString(bc.getGateValues(listB)));
+		System.out.println("C:\t\t"
+				+ booleanListToString(bc.getGateValues(listC)));
+		System.out.println("D:\t\t"
+				+ booleanListToString(bc.getGateValues(listD)));
+		System.out.println("E:\t\t"
+				+ booleanListToString(bc.getGateValues(listE)));
+		List<Gate> rotlGates = bc.rotl(listA, 5);
+		System.out.println("rotl(A, 5):\t"
+				+ booleanListToString(bc.getGateValues(rotlGates)));
+		List<Gate> fGates = bc.fFunction(listB, listC, listD);
+		bc.evaluateCircuitToGates(fGates);
+		// System.out.println("f(B, C, D):\t"
+		// + booleanListToString(bc.getGateValues(fGates)));
+		// System.out.println("E:\t\t"
+		// + booleanListToString(bc.getGateValues(listE)));
+		List<Gate> x0 = bc.getInputNodes().subList(0, 32);
+		// System.out.println("X[0]:\t\t"
+		// + booleanListToString(bc.getGateValues(x0)));
+		List<Gate> y1 = bc.getInputNodes().subList(672, 704);
+		// System.out.println("y1:\t\t"
+		// + booleanListToString(bc.getGateValues(y1)));
+		List<Gate> addGates = bc.add(x0, y1);
+		bc.evaluateCircuitToGates(addGates);
+		// System.out.println("x[0] + y1:\t" +
+		// booleanListToString(bc.getGateValues(addGates)));
+		addGates = bc.add(listE, addGates);
+		bc.evaluateCircuitToGates(addGates);
+		// System.out.println("E + x[0] + y1:\t" +
+		// booleanListToString(bc.getGateValues(addGates)));
+		addGates = bc.add(fGates, addGates);
+		bc.evaluateCircuitToGates(addGates);
+		System.out.println("f + E + x0 + y1:"
+				+ booleanListToString(bc.getGateValues(addGates)));
+		addGates = bc.add(rotlGates, addGates);
+		bc.evaluateCircuitToGates(addGates);
+		System.out.println("rotl5+f+E+x0+y1:"
+				+ booleanListToString(bc.getGateValues(addGates)));
+		System.out.println("rotl5+f+E+x0+y1:"
+				+ Integer.toHexString(Integer.parseInt(
+						booleanListToString(bc.getGateValues(addGates)), 2)));
+		// List<Gate> gates = bc.hFunction(listA, listB, listC);
+		// bc.evaluateCircuitToGates(gates);
+		// System.out.println(booleanListToString(bc.getGateValues(gates)));
+		// System.out.println(listA);
+		// System.out.println(listB);
+		// System.out.println(listC);
+		// System.out.println(listD);
+		// System.out.println(listE);
 	}
 
 }

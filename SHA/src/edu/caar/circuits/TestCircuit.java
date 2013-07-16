@@ -45,21 +45,21 @@ public class TestCircuit extends BooleanCircuit {
 	public String toString() {
 		return super.toString();
 	}
-
+	
 	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {
 		if (variableInputs.size() > 0) {
 			Gate input = variableInputs.get(0);
 			if (variableInputs.size() == 1) {
-				input.setValue(false);
-				inputs.add(booleanListToString(getInput()));
-				input.setValue(true);
-				inputs.add(booleanListToString(getInput()));
+				values.put(input, false);
+				inputs.add(booleanListToString(getGateValues(inputNodes)));
+				values.put(input, true);
+				inputs.add(booleanListToString(getGateValues(inputNodes)));
 			} else {
 				List<Gate> removed = new ArrayList<Gate>(variableInputs);
 				removed.remove(0);
-				input.setValue(false);
+				values.put(input, false);
 				generateInputs(removed, inputs);
-				input.setValue(true);
+				values.put(input, true);
 				generateInputs(removed, inputs);
 			}
 		}

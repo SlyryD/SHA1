@@ -18,8 +18,6 @@ public class Gate {
 
 	// Gate type
 	private Type type;
-	// Value of circuit at gate and evaluated flag
-	private boolean value, evaluated;
 	// Number (id) of gate
 	private int number;
 
@@ -31,7 +29,6 @@ public class Gate {
 	 */
 	public Gate(Type type, int number) {
 		this.type = type;
-		evaluated = false;
 		this.number = number;
 	}
 
@@ -42,43 +39,6 @@ public class Gate {
 	 */
 	public Type getType() {
 		return type;
-	}
-
-	/**
-	 * Returns value of circuit at gate
-	 * 
-	 * @return value
-	 */
-	public boolean getValue() {
-		return value;
-	}
-
-	/**
-	 * Sets value of circuit as gate
-	 * 
-	 * @param value
-	 */
-	public void setValue(boolean value) {
-		this.value = value;
-		evaluated = true;
-	}
-
-	/**
-	 * Returns whether value of circuit at gate has been evaluated
-	 * 
-	 * @return evaluated
-	 */
-	public boolean isEvaluated() {
-		return evaluated;
-	}
-
-	/**
-	 * Reset gate evaluated to false
-	 * 
-	 * @param evaluated
-	 */
-	public void resetEvaluated() {
-		evaluated = false;
 	}
 
 	/**
@@ -107,7 +67,7 @@ public class Gate {
 	 */
 	public int hashCode() {
 		String string = toString();
-		return string.substring(0, string.indexOf('=')).hashCode();
+		return string.hashCode();
 	}
 
 	/**
@@ -118,25 +78,25 @@ public class Gate {
 	public String toString() {
 		switch (type) {
 		case INPUT:
-			return "INPUT" + number + "=" + value;
+			return "INPUT" + number;
 		case OUTPUT:
-			return "OUTPUT" + number + "=" + value;
+			return "OUTPUT" + number;
 		case NOT:
-			return "NOT" + number + "=" + value;
+			return "NOT" + number;
 		case AND:
-			return "AND" + number + "=" + value;
+			return "AND" + number;
 		case OR:
-			return "OR" + number + "=" + value;
+			return "OR" + number;
 		case XOR:
-			return "XOR" + number + "=" + value;
+			return "XOR" + number;
 		case NAND:
-			return "NAND" + number + "=" + value;
+			return "NAND" + number;
 		case NOR:
-			return "NOR" + number + "=" + value;
+			return "NOR" + number;
 		case XNOR:
-			return "XNOR" + number + "=" + value;
+			return "XNOR" + number;
 		default:
-			return "GATE" + number + "=" + value;
+			return "GATE" + number;
 		}
 	}
 
