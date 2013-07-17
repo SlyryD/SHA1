@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import edu.caar.sha.jung.BooleanCircuit;
+import edu.caar.sha.jung.DisplayCircuit;
 import edu.caar.sha.jung.Edge;
 import edu.caar.sha.jung.Gate;
 import edu.uci.ics.jung.graph.util.EdgeType;
@@ -19,7 +20,7 @@ public class TestCircuit extends BooleanCircuit {
 	private static final long serialVersionUID = 2908552618552078249L;
 
 	HashMap<String, String> table;
-	
+
 	/**
 	 * Constructs and initializes circuit
 	 */
@@ -48,7 +49,7 @@ public class TestCircuit extends BooleanCircuit {
 	public String toString() {
 		return super.toString();
 	}
-	
+
 	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {
 		if (variableInputs.size() > 0) {
 			Gate input = variableInputs.get(0);
@@ -93,8 +94,7 @@ public class TestCircuit extends BooleanCircuit {
 				String value = table.get(minCutValues);
 				if (value != null && !value.equals(input)) {
 					System.out.println("Collision detected!\n" + value
-							+ " --> "
-							+ booleanListToString(getOutput(value))
+							+ " --> " + booleanListToString(getOutput(value))
 							+ "\n" + input + " --> "
 							+ booleanListToString(getOutput(input)));
 					return true;
@@ -150,21 +150,24 @@ public class TestCircuit extends BooleanCircuit {
 			tempCircuit.simplifyCircuit();
 		} while (!tempCircuit.birthdayAttack());
 
-		// // Simplify circuit
-		// List<Gate> variableInputs = tempCircuit.simplifyCircuit();
-		// System.out.println("Variable Inputs: " + variableInputs);
-		//
-		// // Print collisions
-		// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
-		// variableInputs.size()));
-		// tempCircuit.generateInputs(variableInputs, inputs);
-		// List<String> outputs = new ArrayList<String>((int) Math.pow(2,
-		// variableInputs.size()));
-		// for (String input : inputs) {
-		// outputs.add(booleanListToString(circuit.getOutput(input)));
-		// }
-		// System.out.println("Inputs with collisions: " + inputs + " --> "
-		// + outputs);
+		// Simplify circuit
+		tempCircuit = new TestCircuit();
+		tempCircuit.minCutSetInput();
+		new DisplayCircuit(tempCircuit).display();
+		List<Gate> variableInputs = tempCircuit.simplifyCircuit();
+		System.out.println("Variable Inputs: " + variableInputs);
+
+		// Print collisions
+		List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+				variableInputs.size()));
+		tempCircuit.generateInputs(variableInputs, inputs);
+		List<String> outputs = new ArrayList<String>((int) Math.pow(2,
+				variableInputs.size()));
+		for (String input : inputs) {
+			outputs.add(booleanListToString(circuit.getOutput(input)));
+		}
+		System.out.println("Inputs with collisions: " + inputs + " --> "
+				+ outputs);
 	}
 
 }

@@ -171,13 +171,20 @@ public class DisplayCircuit {
 			}
 		};
 
+		Transformer<Gate, String> labelPaint = new Transformer<Gate, String>() {
+
+			@Override
+			public String transform(Gate gate) {
+				return gate.toString() + "=" + circuit.getValue(gate);
+			}
+		};
+
 		server.getRenderContext().setVertexShapeTransformer(vertexShape);
 		server.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
 		server.getRenderContext().setEdgeStrokeTransformer(
 				edgeStrokeTransformer);
 		server.getRenderContext().setEdgeDrawPaintTransformer(edgePaint);
-		server.getRenderContext().setVertexLabelTransformer(
-				new ToStringLabeller<Gate>());
+		server.getRenderContext().setVertexLabelTransformer(labelPaint);
 		server.getRenderContext().setEdgeLabelTransformer(
 				new ToStringLabeller<Edge>());
 		server.getRenderer().getVertexLabelRenderer()

@@ -261,41 +261,61 @@ public class SHA1 extends BooleanCircuit {
 		return newList;
 	}
 
-	// Fix input in SHA-1 circuit
+	/**
+	 * Fix input in SHA-1 circuit
+	 */
 	public void fixInput() {
+		// Create message with given length
 		int length = 64;
-		setValue(inputNodes.get(length), true);
-		for (int i = length + 1; length < 448; i++) {
-			setValue(inputNodes.get(i), false);
+		// Fix padding
+		setAndFixValue(inputNodes.get(length), true);
+		for (int i = length + 1; i < 448; i++) {
+			setAndFixValue(inputNodes.get(i), false);
 		}
+		// Fix message length padding
 		String lengthStr = Integer.toBinaryString(length);
 		int strLength = lengthStr.length();
 		for (int i = 448; i < 512 - strLength; i++) {
-			setValue(inputNodes.get(i), false);
+			setAndFixValue(inputNodes.get(i), false);
 		}
 		for (int i = 512 - strLength; i < 512; i++) {
-			setValue(inputNodes.get(i),
+			setAndFixValue(inputNodes.get(i),
 					lengthStr.charAt(i - 512 + strLength) == '1');
 		}
 		// Fix constants
 		List<Boolean> constants = getConstants();
 		for (int i = 512; i < 800; i++) {
-			setValue(inputNodes.get(i), constants.get(i - 512));
+			setAndFixValue(inputNodes.get(i), constants.get(i - 512));
+		}
+	}
+
+	public void randomlyFixInput() {
+		// Fix input
+		for (int i = 0; i < 512; i++) {
+			if (getRandBoolean()) {
+				setAndFixValue(inputNodes.get(i), getRandBoolean());
+			}
+		}
+		// Fix constants
+		List<Boolean> constants = getConstants();
+		for (int i = 512; i < 800; i++) {
+			setAndFixValue(inputNodes.get(i), constants.get(i - 512));
 		}
 	}
 
 	public void birthdayAttack() {
-		// Number of terms to search 2^n/2 where n = 448
-		int numTerms = (int) Math.pow(2, 22); // too many terms
+		// Number of terms to search 2^n/2 where n ~ 74
+		int numTerms = (int) Math.pow(2, 16); // Not 2^37 --> <50% chance
+		int messageSpace = (int) Math.pow(2, getMinCutEdges().size());
 		int count = 0;
 
 		String[] inputs;
 		String minCutValues;
 
-		while (true) {
+		while (table.size() < messageSpace) {
 			count += 1;
 			System.out.println("Iteration number " + count);
-			// Generate 2^(n/2) random terms out of 2^4 terms
+			// Generate 2^(n/2) random terms out of ~ 2^74 terms
 			System.out
 					.println("Generating " + numTerms + " random messages...");
 			inputs = new String[numTerms];
@@ -309,19 +329,25 @@ public class SHA1 extends BooleanCircuit {
 				minCutValues = booleanListToString(getMinCutValues(input));
 				String value = table.get(minCutValues);
 				if (value != null && !value.equals(input)) {
-					System.out.println("Collision detected!\n" + value
-							+ " --> " + booleanListToString(getOutput(value))
-							+ "\n" + input + " --> "
-							+ booleanListToString(getOutput(input)));
+					System.out
+							.println("Collision detected!\n"
+									+ binarytoHexString(value)
+									+ " --> "
+									+ binarytoHexString(booleanListToString(getOutput(value)))
+									+ "\n"
+									+ binarytoHexString(input)
+									+ " --> "
+									+ binarytoHexString(booleanListToString(getOutput(input))));
 					return;
 				} else {
 					table.put(minCutValues, input);
 				}
 			}
 			System.out.println("All messages hashed.");
-			System.out
-					.println("No collisions found. Trying with 2^2 new random terms.");
+			System.out.println("No collisions found. Trying with " + numTerms
+					+ " new random terms.");
 		}
+		System.out.println("No collisions with given fixed input!!");
 	}
 
 	@Override
@@ -412,6 +438,43 @@ public class SHA1 extends BooleanCircuit {
 
 		return input;
 	}
+	
+	/**
+	 * Generates input from given string
+	 * 
+	 * @return input
+	 */
+	public static List<Boolean> padInput(String binaryStr) {
+		if (binaryStr.length() > 447) {
+			throw new IllegalArgumentException(
+					"String longer than 447 bits not supported");
+		}
+		// Construct valid input from string
+		List<Boolean> input = new ArrayList<Boolean>();
+		// Number of bits in message
+		int size = binaryStr.length();
+		// Message
+		for (int i = 0; i < size; i++) {
+			input.add(binaryStr.charAt(i) == '1');
+		}
+		// Padding
+		input.add(true);
+		for (int i = size + 1; i < 448; i++) {
+			input.add(false);
+		}
+		// 64-bit representation of input length
+		binaryStr = Integer.toBinaryString(size);
+		for (int i = 0; i < 64 - binaryStr.length(); i++) {
+			input.add(false);
+		}
+		for (int i = 0; i < binaryStr.length(); i++) {
+			input.add(binaryStr.charAt(i) == '1');
+		}
+
+		input.addAll(getConstants());
+
+		return input;
+	}
 
 	public static List<Boolean> getConstants() {
 		List<Boolean> input = new ArrayList<Boolean>(288);
@@ -446,6 +509,17 @@ public class SHA1 extends BooleanCircuit {
 		}
 		return input;
 	}
+	
+	public static String hexToCharString(String hexStr) {
+		StringBuilder sb = new StringBuilder();
+		String substring;
+		for (int i = 0; i < 224; i++) {
+			substring = hexStr.substring(2 * i, 2 * (i + 1));
+			char value = (char) Integer.parseInt(substring, 16);
+			sb.append(value);
+		}
+		return sb.toString();
+	}
 
 	/**
 	 * Creates SHA-1 circuit, gathers output
@@ -454,10 +528,11 @@ public class SHA1 extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Get circuit
+		System.out.println("Constructing circuit...");
 		SHA1 circuit = new SHA1();
-
+		
 		// Construct empty string input
-		List<Boolean> input = generateSHA1Input();
+		List<Boolean> input = padInput("00100110100101001000111000100100111011101010110111001101011001101001110011001000110100010111101000001011110100110");
 
 		// Input
 		System.out.println("Input:");
@@ -468,11 +543,26 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println(binarytoHexString(booleanListToString(circuit
 				.getOutput(input))));
 
-		// Fix inputs and simplify circuit
-
-		// Min-cut
-		// System.out.println("Min-cut");
-		// System.out.println("The edge set is: " + circuit.getMinCutEdges());
+//		// Fix inputs and simplify circuit
+//		System.out.println("Fixing input...");
+//		// circuit.fixInput();
+//		circuit.randomlyFixInput();
+//
+//		// Input
+//		System.out.println("Input:");
+//		System.out.println(binarytoHexString(circuit.generateInput()));
+//
+//		// Simplify circuit
+//		System.out.println("Simplifying circuit...");
+//		circuit.simplifyCircuit();
+//
+//		// Min-cut
+//		System.out.println("Calculating min-cut...");
+//		System.out.println("The edge set is: " + circuit.getMinCutEdges());
+//
+//		// Birthday attack
+//		System.out.println("Carrying out birthday attack...");
+//		circuit.birthdayAttack();
 	}
 
 }

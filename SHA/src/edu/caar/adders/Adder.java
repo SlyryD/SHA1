@@ -22,6 +22,8 @@ public class Adder extends BooleanCircuit {
 
 	private int size;
 
+	HashMap<String, String> table;
+
 	/**
 	 * Constructs default adder
 	 */
@@ -29,6 +31,7 @@ public class Adder extends BooleanCircuit {
 		super();
 		size = 32;
 		initializeGraph();
+		table = new HashMap<String, String>();
 	}
 
 	/**
@@ -105,16 +108,15 @@ public class Adder extends BooleanCircuit {
 		}
 	}
 
-	public static boolean birthdayAttack(BooleanCircuit circuit) {
+	public boolean birthdayAttack() {
 		// Number of terms to search 2^n/2 where n = 64
 		int numTerms = (int) Math.pow(2, 16);
 		int count = 0;
-		HashMap<String, String> table;
+
 		String[] inputs;
 		String minCutValues;
 
 		while (true) {
-			table = new HashMap<String, String>();
 			count += 1;
 			System.out.println("Iteration number " + count);
 			// Generate 2^(n/2) random terms out of 2^64 terms
@@ -122,21 +124,19 @@ public class Adder extends BooleanCircuit {
 					.println("Generating " + numTerms + " random messages...");
 			inputs = new String[numTerms];
 			for (int i = 0; i < numTerms; i++) {
-				inputs[i] = circuit.generateInput();
+				inputs[i] = generateInput();
 			}
 			System.out.println("All random messages generated.");
 			// Hash all the terms in the term_array
 			System.out.println("Hashing all random messages...");
 			for (String input : inputs) {
-				minCutValues = booleanListToString(circuit
-						.getMinCutValues(input));
+				minCutValues = booleanListToString(getMinCutValues(input));
 				String value = table.get(minCutValues);
 				if (value != null && !value.equals(input)) {
 					System.out.println("Collision detected!\n" + value
-							+ " --> "
-							+ booleanListToString(circuit.getOutput(value))
+							+ " --> " + booleanListToString(getOutput(value))
 							+ "\n" + input + " --> "
-							+ booleanListToString(circuit.getOutput(input)));
+							+ booleanListToString(getOutput(input)));
 					return true;
 				} else {
 					table.put(minCutValues, input);
@@ -171,7 +171,7 @@ public class Adder extends BooleanCircuit {
 		// Birthday attack
 		System.out
 				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
-		while (!birthdayAttack(circuit)) {
+		while (!circuit.birthdayAttack()) {
 		}
 		long endTime = System.nanoTime();
 		System.out.println(endTime - startTime + "ns");
