@@ -1,7 +1,6 @@
 package edu.caar.adders;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -74,22 +73,18 @@ public class Adder extends BooleanCircuit {
 		ListIterator<Boolean> it1 = input1.listIterator(input1.size()), it2 = input2
 				.listIterator(input2.size());
 		for (int i = 0; i < size; i++) {
-			values.put(inputNodes.get(2 * i),
+			setAndFixValue(inputNodes.get(2 * i),
 					it1.hasPrevious() ? it1.previous() : false);
-			values.put(inputNodes.get(2 * i),
+			setAndFixValue(inputNodes.get(2 * i),
 					it2.hasPrevious() ? it2.previous() : false);
 		}
 	}
 
 	public String getOutputString() {
 		StringBuilder sb = new StringBuilder();
-		Iterator<Gate> outputIt = outputNodes.iterator();
-		while (outputIt.hasNext()) {
-			Gate gate = outputIt.next();
-			if (outputIt.hasNext()) {
-				sb.insert(0, values.get(gate) == true ? "1" : "0");
-			} else if (values.get(gate) == true) {
-				sb.insert(0, "1");
+		for (Gate gate : outputNodes) {
+			if (getValue(gate) != null) {
+				sb.insert(0, getValue(gate));
 			}
 		}
 		return sb.toString();
@@ -98,14 +93,16 @@ public class Adder extends BooleanCircuit {
 	/**
 	 * Sets first few bites of inputs
 	 */
-	public void setInput() {
-		resetValues();
-		for (int i = 0; i < 9; i++) {
-			values.put(inputNodes.get(i), false);
-			fixed.put(inputNodes.get(i), true);
-			values.put(inputNodes.get(i + 32), false);
-			fixed.put(inputNodes.get(i + 32), true);
+	public void fixInput() {
+		resetAllGates();
+		int count = 0;
+		for (int i = 0; i < 64; i++) {
+			if (getRandBoolean()) {
+				count++;
+				setAndFixValue(inputNodes.get(i), getRandBoolean());
+			}
 		}
+		System.out.println(count + " gates fixed.");
 	}
 
 	public boolean birthdayAttack() {
@@ -159,53 +156,25 @@ public class Adder extends BooleanCircuit {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// String representations of numbers to be added
-		// int num1 = 2000000000, num2 = 1;
-
 		// Create adder
-		// Adder tempCircuit = new Adder();
+		System.out.println("Constructing circuit...");
 		Adder circuit = new Adder();
 
-		long startTime = System.nanoTime();
-		circuit.setInput();
+		// Fix input and simplify circuit
+		System.out.println("Fixing input and simplifying circuit...");
+		circuit.fixInput();
+		circuit.simplifyCircuit();
+
+		// Calculate min cut
+		System.out.println("Calculating min cut...");
+		System.out.println(circuit.getMinCutEdges());
+
 		// Birthday attack
-		System.out
-				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
-		while (!circuit.birthdayAttack()) {
-		}
+		System.out.println("Carrying out birthday attack...");
+		long startTime = System.nanoTime();
+		circuit.birthdayAttack();
 		long endTime = System.nanoTime();
 		System.out.println(endTime - startTime + "ns");
-		//
-		// // Evaluated circuit
-		// tempCircuit.evaluateCircuit();
-		//
-		// // Print edges
-		// System.out.println(tempCircuit.toString());
-		//
-		// // Print results
-		// System.out.println(Integer.toBinaryString(num1) + " + "
-		// + Integer.toBinaryString(num2) + " = "
-		// + tempCircuit.getOutputString());
-		// System.out.println(num1 + " + " + num2 + " = "
-		// + Integer.parseInt(tempCircuit.getOutputString(), 2));
-		//
-		// // Min-cut
-		// System.out.println("Min-cut");
-		// System.out.println("The edge set is: " +
-		// tempCircuit.getMinCutEdges());
-		//
-		// // Associate DisplayCircuit
-		// // DisplayCircuit circuitDisplay = new DisplayCircuit(circuit);
-		// // circuitDisplay.display();
-		//
-		// // Fix inputs along min cut
-		// tempCircuit.setInput();
-		// tempCircuit.simplifyCircuit();
-		//
-		// // Min-cut
-		// System.out.println("Min-cut");
-		// System.out.println("The edge set is: " +
-		// tempCircuit.getMinCutEdges());
 	}
 
 }

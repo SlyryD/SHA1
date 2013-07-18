@@ -175,6 +175,9 @@ public class DisplayCircuit {
 
 			@Override
 			public String transform(Gate gate) {
+				if (circuit.getValue(gate) == null) {
+					return gate.toString();
+				}
 				return gate.toString() + "=" + circuit.getValue(gate);
 			}
 		};

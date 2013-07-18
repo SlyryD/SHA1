@@ -34,11 +34,11 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	// Map of fixed gate values
 	protected Map<Gate, Boolean> values, fixed;
 	// Source and sink for use by min cut algorithm
-	protected Gate source, sink;
+	private Gate source, sink;
 	// Min cut edges calculated once
 	private Set<Edge> minCutEdges;
 	// Version of circuit
-	int version, minCutVersion;
+	private int version, minCutVersion;
 
 	/* ------------------------------ CONSTRUCTOR ------------------------------ */
 
@@ -242,12 +242,18 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * @param gate
 	 * @return value
 	 */
-	public boolean getValue(Gate gate) {
-		if (values.get(gate) == null) {
-			return false;
-		} else {
-			return values.get(gate);
-		}
+	public Boolean getValue(Gate gate) {
+		return values.get(gate);
+	}
+
+	/**
+	 * Returns whether gate is evaluated
+	 * 
+	 * @param gate
+	 * @return evaluated
+	 */
+	public boolean isEvaluated(Gate gate) {
+		return values.containsKey(gate);
 	}
 
 	/**
@@ -269,6 +275,16 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 			newValues.put(gate, values.get(gate));
 		}
 		values = newValues;
+	}
+
+	/**
+	 * Returns whether gate is fixed
+	 * 
+	 * @param gate
+	 * @return fixed
+	 */
+	public boolean isFixed(Gate gate) {
+		return fixed.containsKey(gate);
 	}
 
 	/**
@@ -666,7 +682,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * @return min cut edges
 	 */
 	public Set<Edge> getMinCutEdges() {
-		if (minCutVersion != version) {
+		if (minCutVersion != version || minCutEdges == null) {
 			return (minCutEdges = calcMinCut());
 		}
 		return minCutEdges;
@@ -1170,7 +1186,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		}
 		return sb.toString();
 	}
-	
+
 	public static String hextoBinaryString(String hexStr) {
 		StringBuilder sb = new StringBuilder();
 		String substring;
