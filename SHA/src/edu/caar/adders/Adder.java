@@ -96,7 +96,7 @@ public class Adder extends BooleanCircuit {
 	public void fixInput() {
 		resetAllGates();
 		int count = 0;
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < inputNodes.size(); i++) {
 			if (getRandBoolean()) {
 				count++;
 				setAndFixValue(inputNodes.get(i), getRandBoolean());

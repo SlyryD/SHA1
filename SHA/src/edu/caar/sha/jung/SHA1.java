@@ -550,6 +550,8 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println("Constructing circuit...");
 		SHA1 circuit = new SHA1();
 
+		
+
 		// // Construct empty string input
 		// List<Boolean> input = generateSHA1Input("abc");
 		//
