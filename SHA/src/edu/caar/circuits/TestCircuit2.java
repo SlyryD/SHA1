@@ -35,9 +35,9 @@ public class TestCircuit2 extends BooleanCircuit {
 	public void initializeGraph() {
 		// Add edges to create linking structure
 		Gate input = getInputNode();
-		Gate gate = xor(xor(getInputNode(), input), input);
-
-		addEdge(new Edge(), gate, getOutputNode(), EdgeType.DIRECTED);
+		// Connect to output node
+		addEdge(new Edge(), and(and(getInputNode(), input), input),
+				getOutputNode(), EdgeType.DIRECTED);
 	}
 
 	/**
@@ -128,18 +128,29 @@ public class TestCircuit2 extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Create circuits
-		TestCircuit2 circuit = new TestCircuit2();
+		TestCircuit2 circuit;
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < 2; j++) {
+				circuit = new TestCircuit2();
 
-		// Fix circuit input
-//		circuit.fixInput();
-		circuit.setAndFixValue(circuit.getInputNodes().get(1), false);
+				// Fix circuit input
+				// circuit.fixInput();
+				circuit.setAndFixValue(circuit.getInputNodes().get(i), j == 0);
 
-		// Simplify circuit
-		List<Gate> variableInputs = circuit.simplifyCircuit();
-		System.out.println("Variable Inputs: " + variableInputs);
+				// Simplify circuit
+				List<Gate> variableInputs = circuit.simplifyCircuit();
+				System.out.println("Variable Inputs: " + variableInputs);
+
+//				new DisplayCircuit(circuit).display();
+
+				if (!circuit.isValid()) {
+					throw new IllegalArgumentException("Circuit not valid");
+				}
+			}
+		}
 
 		// Display circuit
-		new DisplayCircuit(circuit).display();
+		// new DisplayCircuit(circuit).display();
 
 		// // Print collisions
 		// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
