@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import edu.uci.ics.jung.graph.util.EdgeType;
 
@@ -18,6 +19,8 @@ public class SHA1 extends BooleanCircuit {
 
 	// Serialization ID
 	private static final long serialVersionUID = -3025896134713478273L;
+
+	static int length = 79;
 
 	// Hash table for birthday attack
 	HashMap<String, String> table;
@@ -177,6 +180,18 @@ public class SHA1 extends BooleanCircuit {
 						EdgeType.DIRECTED);
 			}
 		}
+
+		// Set y constants and simplify circuit (builds constants into circuit)
+		List<Boolean> constants = getYConstants();
+		for (int i = 0; i < 128; i++) {
+			setAndFixValue(inputNodes.get(i + 672), constants.get(i));
+		}
+		simplifyCircuit();
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 32; j++) {
+				removeVertex(yConstants.get(i).get(j));
+			}
+		}
 	}
 
 	/**
@@ -267,29 +282,43 @@ public class SHA1 extends BooleanCircuit {
 	/**
 	 * Fix input in SHA-1 circuit
 	 */
-	public void fixInput() {
+	public void fixInput(BufferedWriter out) throws IOException {
+		resetAllGates();
 		// Create message with given length
-		int length = 64;
+		// int length = 64;
+		for (int i = 0; i < length; i++) {
+			out.write("-1,");
+		}
 		// Fix padding
 		setAndFixValue(inputNodes.get(length), true);
+		out.write("1,");
 		for (int i = length + 1; i < 448; i++) {
 			setAndFixValue(inputNodes.get(i), false);
+			out.write("0,");
 		}
 		// Fix message length padding
 		String lengthStr = Integer.toBinaryString(length);
 		int strLength = lengthStr.length();
 		for (int i = 448; i < 512 - strLength; i++) {
 			setAndFixValue(inputNodes.get(i), false);
+			out.write("0,");
 		}
 		for (int i = 512 - strLength; i < 512; i++) {
-			setAndFixValue(inputNodes.get(i),
-					lengthStr.charAt(i - 512 + strLength) == '1');
+			if (lengthStr.charAt(i - 512 + strLength) == '1') {
+				setAndFixValue(inputNodes.get(i), true);
+				out.write("1,");
+			} else {
+				setAndFixValue(inputNodes.get(i), false);
+				out.write("0,");
+			}
 		}
 		// Fix constants
-		List<Boolean> constants = getConstants();
-		for (int i = 512; i < 800; i++) {
+		List<Boolean> constants = getHConstants();
+		for (int i = 512; i < 672; i++) {
 			setAndFixValue(inputNodes.get(i), constants.get(i - 512));
+			out.write(constants.get(i - 512) ? "1," : "0,");
 		}
+		out.write(672 - length + ",");
 	}
 
 	public void randomlyFixInput(BufferedWriter out) throws IOException {
@@ -303,22 +332,19 @@ public class SHA1 extends BooleanCircuit {
 		// out.write("Min-cut Weight\n");
 
 		// Fix input
-		int count = 0;
+		int number = 500;
+		Map<Integer, Boolean> ints = BooleanCircuit.getRandInts(number, 672);
+		boolean value;
 		for (int i = 0; i < 672; i++) {
-			if (getRandBoolean() && getRandBoolean() && getRandBoolean() && getRandBoolean()) {
-				out.write("0,");
+			if (ints.containsKey(i)) {
+				value = getRandBoolean();
+				setAndFixValue(inputNodes.get(i), value);
+				out.write(value ? "1," : "0,");
 			} else {
-				setAndFixValue(inputNodes.get(i), getRandBoolean());
-				out.write("1,");
-				count++;
+				out.write("-1,");
 			}
 		}
-		out.write(count + ",");
-		// Fix constants
-		List<Boolean> constants = getConstants();
-		for (int i = 672; i < 800; i++) {
-			setAndFixValue(inputNodes.get(i), constants.get(i - 512));
-		}
+		out.write(number + ",");
 	}
 
 	public void birthdayAttack() {
@@ -368,11 +394,6 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println("No collisions with given fixed input!!");
 	}
 
-	@Override
-	public String toString() {
-		return super.toString();
-	}
-
 	/**
 	 * Generates random input of random size
 	 * 
@@ -408,7 +429,7 @@ public class SHA1 extends BooleanCircuit {
 			input.add(binaryString.charAt(i) == '1');
 		}
 
-		input.addAll(getConstants());
+		input.addAll(getHConstants());
 
 		return input;
 	}
@@ -452,7 +473,7 @@ public class SHA1 extends BooleanCircuit {
 			input.add(binaryStr.charAt(i) == '1');
 		}
 
-		input.addAll(getConstants());
+		input.addAll(getHConstants());
 
 		return input;
 	}
@@ -489,13 +510,13 @@ public class SHA1 extends BooleanCircuit {
 			input.add(binaryStr.charAt(i) == '1');
 		}
 
-		input.addAll(getConstants());
+		input.addAll(getHConstants());
 
 		return input;
 	}
 
-	public static List<Boolean> getConstants() {
-		List<Boolean> input = new ArrayList<Boolean>(288);
+	public static List<Boolean> getHConstants() {
+		List<Boolean> input = new ArrayList<Boolean>(160);
 		// IV constants
 		String[] hConstants = new String[] {
 				Integer.toBinaryString(0x67452301),
@@ -511,6 +532,11 @@ public class SHA1 extends BooleanCircuit {
 				input.add(h.charAt(i) == '1');
 			}
 		}
+		return input;
+	}
+
+	public static List<Boolean> getYConstants() {
+		List<Boolean> input = new ArrayList<Boolean>(128);
 		// Additive constants
 		String[] yConstants = new String[] {
 				Integer.toBinaryString(0x5a827999),
@@ -545,7 +571,7 @@ public class SHA1 extends BooleanCircuit {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		for (int i = 0; i < 10; i++) {
+		while (length > 0) {
 			// Get circuit
 			System.out.println("Constructing circuit...");
 			SHA1 circuit = new SHA1();
@@ -570,21 +596,41 @@ public class SHA1 extends BooleanCircuit {
 
 				// Fix inputs and simplify circuit
 				System.out.println("Fixing input...");
-				// circuit.fixInput();
-				circuit.randomlyFixInput(out);
+				circuit.fixInput(out);
+				// circuit.randomlyFixInput(out);
 
 				// Simplify circuit
 				System.out.println("Simplifying circuit...");
-				circuit.simplifyCircuit();
+				List<Gate> variableInputs = circuit.simplifyCircuit();
+
+				// Print collisions
+				// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+				// variableInputs.size()));
+				// circuit.generateInputs(variableInputs, inputs);
+				// List<String> outputs = new ArrayList<String>((int)
+				// Math.pow(2,
+				// variableInputs.size()));
+				// for (String input : inputs) {
+				// outputs.add(booleanListToString(circuit.getOutput(input)));
+				// }
+				// System.out.println("Inputs with collisions: " + inputs +
+				// " --> "
+				// + outputs);
+
+				// System.out
+				// .println(binarytoHexString(booleanListToString(circuit
+				// .getOutput(stringToBooleanList(input)))));
 
 				// Min-cut
 				System.out.println("Calculating min-cut...");
 				System.out.println("The edge set is: "
 						+ circuit.getMinCutEdges());
-				out.write(circuit.getMinCutEdges().size() + "\n");
+				out.write(circuit.getMinCutEdges().size() + ",");
+				out.write(variableInputs.toString().replace(',', ' ') + "\n");
 
 				// Close stream
 				out.close();
+				length--;
 			} catch (Exception e) {
 				System.err.println("Error: " + e.getMessage());
 			}

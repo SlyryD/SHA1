@@ -145,11 +145,6 @@ public class Adder extends BooleanCircuit {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return super.toString();
-	}
-
 	/**
 	 * Creates and displays adder circuit graph
 	 * 

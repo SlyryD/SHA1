@@ -43,13 +43,6 @@ public class TestCircuit extends BooleanCircuit {
 		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
 	}
 
-	/**
-	 * Returns string representation of circuit
-	 */
-	public String toString() {
-		return super.toString();
-	}
-
 	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {
 		if (variableInputs.size() > 0) {
 			Gate input = variableInputs.get(0);

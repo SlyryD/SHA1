@@ -765,9 +765,9 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	public List<Gate> simplifyCircuit() {
 		List<Gate> variableInputs = new ArrayList<Gate>();
 		int numGates = Integer.MAX_VALUE;
-		while (getVertexCount() != numGates) {
+		while (getVertexCount() < numGates) {
 			numGates = getVertexCount();
-			for (Gate gate : getInputNodes()) {
+			for (Gate gate : inputNodes) {
 				if (fixed.containsKey(gate)) {
 					simplifyVertex(gate, variableInputs);
 				}
@@ -995,7 +995,8 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	private void simplifyUp(Gate vertex, List<Gate> variableInputs) {
 		if (getSuccessorCount(vertex) == 0) {
 			if (vertex.getType() == Gate.Type.INPUT) {
-				if (!variableInputs.contains(vertex)) {
+				if (!fixed.containsKey(vertex)
+						&& !variableInputs.contains(vertex)) {
 					variableInputs.add(vertex);
 				}
 			} else {
@@ -1238,11 +1239,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		return sb.toString();
 	}
 
-	@Override
-	public String toString() {
-		return super.toString();
-	}
-
 	/* -------------------- STATIC HELPER METHODS -------------------- */
 
 	/**
@@ -1252,6 +1248,26 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 */
 	public static boolean getRandBoolean() {
 		return random.nextBoolean();
+	}
+
+	/**
+	 * Returns map of given size of unique random integers less than n
+	 * 
+	 * @param size
+	 * @param n
+	 * @return
+	 */
+	public static Map<Integer, Boolean> getRandInts(int size, int n) {
+		int value;
+		Map<Integer, Boolean> ints = new HashMap<Integer, Boolean>(size);
+		for (int i = 0; i < size;) {
+			value = random.nextInt(n);
+			if (!ints.containsKey(value)) {
+				ints.put(value, true);
+				i++;
+			}
+		}
+		return ints;
 	}
 
 	/**

@@ -41,13 +41,6 @@ public class TestCircuit2 extends BooleanCircuit {
 	}
 
 	/**
-	 * Returns string representation of circuit
-	 */
-	public String toString() {
-		return super.toString();
-	}
-
-	/**
 	 * Sets first few bites of inputs
 	 */
 	public void fixInput() {
