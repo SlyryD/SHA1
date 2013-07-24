@@ -1,8 +1,9 @@
-package edu.caar.sha.jung;
+package edu.caar.circuit;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -753,6 +754,35 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 			return (minCutEdges = calcMinCut());
 		}
 		return minCutEdges;
+	}
+	
+	/**
+	 * Implementation of Hao and Orlin min-cut algorithm
+	 */
+	public void findMinCut() {
+		// S := {s}
+		Set<Gate> sSet = new HashSet<Gate>();
+		sSet.add(source);
+		// BestValue := Inf
+		int bestValue = Integer.MAX_VALUE;
+		while (!sSet.containsAll(getVertices())) {
+			// Select some node t' in N-S
+			Gate tPrime = null;
+			for (Gate gate : getVertices()) {
+				if (!sSet.contains(gate)) {
+					tPrime = gate;
+					break;
+				}
+			}
+			// TODO: Determine a minimum S-t' cut
+			
+			// z := u(S*, n-S*)
+			
+		}
+	}
+	
+	private void modifiedInitialize() {
+		
 	}
 
 	/* -------------------- METHODS FOR SIMPLIFYING CIRCUIT -------------------- */

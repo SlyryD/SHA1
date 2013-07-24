@@ -3,8 +3,6 @@ package edu.caar.test;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.caar.sha.jung.Gate;
-
 public class ListTest {
 
 	public static List<Integer> rotl(List<Integer> list, int number) {

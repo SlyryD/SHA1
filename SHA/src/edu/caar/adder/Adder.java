@@ -1,12 +1,12 @@
-package edu.caar.adders;
+package edu.caar.adder;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 
-import edu.caar.sha.jung.BooleanCircuit;
-import edu.caar.sha.jung.Edge;
-import edu.caar.sha.jung.Gate;
+import edu.caar.circuit.BooleanCircuit;
+import edu.caar.circuit.Edge;
+import edu.caar.circuit.Gate;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**

@@ -1,4 +1,4 @@
-package edu.caar.sha.jung;
+package edu.caar.sha1;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import edu.caar.circuit.BooleanCircuit;
+import edu.caar.circuit.Edge;
+import edu.caar.circuit.Gate;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
@@ -19,8 +22,6 @@ public class SHA1 extends BooleanCircuit {
 
 	// Serialization ID
 	private static final long serialVersionUID = -3025896134713478273L;
-
-	static int length = 79;
 
 	// Hash table for birthday attack
 	HashMap<String, String> table;
@@ -285,7 +286,7 @@ public class SHA1 extends BooleanCircuit {
 	public void fixInput(BufferedWriter out) throws IOException {
 		resetAllGates();
 		// Create message with given length
-		// int length = 64;
+		int length = 64;
 		for (int i = 0; i < length; i++) {
 			out.write("-1,");
 		}
@@ -571,69 +572,65 @@ public class SHA1 extends BooleanCircuit {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		while (length > 0) {
-			// Get circuit
-			System.out.println("Constructing circuit...");
-			SHA1 circuit = new SHA1();
+		// Get circuit
+		System.out.println("Constructing circuit...");
+		SHA1 circuit = new SHA1();
 
-			// // Construct empty string input
-			// List<Boolean> input = generateSHA1Input("abc");
-			//
-			// // Input
-			// System.out.println("Input:");
-			// System.out.println(binarytoHexString(booleanListToString(input)));
-			//
-			// // Output
-			// System.out.println("Output:");
-			// System.out.println(binarytoHexString(booleanListToString(circuit
-			// .getOutput(input))));
+		// // Construct empty string input
+		// List<Boolean> input = generateSHA1Input("abc");
+		//
+		// // Input
+		// System.out.println("Input:");
+		// System.out.println(binarytoHexString(booleanListToString(input)));
+		//
+		// // Output
+		// System.out.println("Output:");
+		// System.out.println(binarytoHexString(booleanListToString(circuit
+		// .getOutput(input))));
 
-			// Comma delineated output
-			try {
-				// Create file and write stream
-				FileWriter fstream = new FileWriter("minCutData.csv", true);
-				BufferedWriter out = new BufferedWriter(fstream);
+		// Comma delineated output
+		try {
+			// Create file and write stream
+			FileWriter fstream = new FileWriter("minCutData.csv", true);
+			BufferedWriter out = new BufferedWriter(fstream);
 
-				// Fix inputs and simplify circuit
-				System.out.println("Fixing input...");
-				circuit.fixInput(out);
-				// circuit.randomlyFixInput(out);
+			// Fix inputs and simplify circuit
+			System.out.println("Fixing input...");
+			circuit.fixInput(out);
+			// circuit.randomlyFixInput(out);
 
-				// Simplify circuit
-				System.out.println("Simplifying circuit...");
-				List<Gate> variableInputs = circuit.simplifyCircuit();
+			// Simplify circuit
+			System.out.println("Simplifying circuit...");
+			List<Gate> variableInputs = circuit.simplifyCircuit();
 
-				// Print collisions
-				// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
-				// variableInputs.size()));
-				// circuit.generateInputs(variableInputs, inputs);
-				// List<String> outputs = new ArrayList<String>((int)
-				// Math.pow(2,
-				// variableInputs.size()));
-				// for (String input : inputs) {
-				// outputs.add(booleanListToString(circuit.getOutput(input)));
-				// }
-				// System.out.println("Inputs with collisions: " + inputs +
-				// " --> "
-				// + outputs);
+			// Print collisions
+			// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+			// variableInputs.size()));
+			// circuit.generateInputs(variableInputs, inputs);
+			// List<String> outputs = new ArrayList<String>((int)
+			// Math.pow(2,
+			// variableInputs.size()));
+			// for (String input : inputs) {
+			// outputs.add(booleanListToString(circuit.getOutput(input)));
+			// }
+			// System.out.println("Inputs with collisions: " + inputs +
+			// " --> "
+			// + outputs);
 
-				// System.out
-				// .println(binarytoHexString(booleanListToString(circuit
-				// .getOutput(stringToBooleanList(input)))));
+			// System.out
+			// .println(binarytoHexString(booleanListToString(circuit
+			// .getOutput(stringToBooleanList(input)))));
 
-				// Min-cut
-				System.out.println("Calculating min-cut...");
-				System.out.println("The edge set is: "
-						+ circuit.getMinCutEdges());
-				out.write(circuit.getMinCutEdges().size() + ",");
-				out.write(variableInputs.toString().replace(',', ' ') + "\n");
+			// Min-cut
+			System.out.println("Calculating min-cut...");
+			System.out.println("The edge set is: " + circuit.getMinCutEdges());
+			out.write(circuit.getMinCutEdges().size() + ",");
+			out.write(variableInputs.toString().replace(',', ' ') + "\n");
 
-				// Close stream
-				out.close();
-				length--;
-			} catch (Exception e) {
-				System.err.println("Error: " + e.getMessage());
-			}
+			// Close stream
+			out.close();
+		} catch (Exception e) {
+			System.err.println("Error: " + e.getMessage());
 		}
 
 		// // Birthday attack

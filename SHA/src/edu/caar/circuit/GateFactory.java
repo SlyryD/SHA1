@@ -1,4 +1,4 @@
-package edu.caar.sha.jung;
+package edu.caar.circuit;
 
 /**
  * Static factory that creates gates
