@@ -14,7 +14,7 @@ import edu.caar.circuit.Gate;
 import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
- * Models circuit for SHA-1 hashing algorithm
+ * Models circuit for SHA-1 hash algorithm
  * 
  * @author Ryan
  */
@@ -50,7 +50,7 @@ public class SHA1 extends BooleanCircuit {
 			xStorage.add(xEntry);
 		}
 
-		// IV Constants (h1, .., h5)
+		// IV Constants (h1, h2, h3, h4, h5)
 		List<Gate> hEntry;
 		List<List<Gate>> hConstants = new ArrayList<List<Gate>>(5);
 		for (int i = 16; i < 21; i++) {
@@ -60,10 +60,11 @@ public class SHA1 extends BooleanCircuit {
 			}
 			hConstants.add(hEntry);
 		}
+
 		// Working variables
 		List<List<Gate>> wVariables = new ArrayList<List<Gate>>(hConstants);
 
-		// Additive Constants (y1, .., y4)
+		// Additive Constants (y1, y2, y3, y4)
 		List<Gate> yEntry;
 		List<List<Gate>> yConstants = new ArrayList<List<Gate>>(4);
 		for (int i = 21; i < 25; i++) {
@@ -184,8 +185,11 @@ public class SHA1 extends BooleanCircuit {
 
 		// Set y constants and simplify circuit (builds constants into circuit)
 		List<Boolean> constants = getYConstants();
-		for (int i = 0; i < 128; i++) {
-			setAndFixValue(inputNodes.get(i + 672), constants.get(i));
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 32; j++) {
+				setAndFixValue(yConstants.get(i).get(j),
+						constants.get(32 * i + j));
+			}
 		}
 		simplifyCircuit();
 		for (int i = 0; i < 4; i++) {
@@ -376,13 +380,13 @@ public class SHA1 extends BooleanCircuit {
 				if (value != null && !value.equals(input)) {
 					System.out
 							.println("Collision detected!\n"
-									+ binarytoHexString(value)
+									+ binaryToHexString(value)
 									+ " --> "
-									+ binarytoHexString(booleanListToString(getOutput(value)))
+									+ binaryToHexString(booleanListToString(getOutput(value)))
 									+ "\n"
-									+ binarytoHexString(input)
+									+ binaryToHexString(input)
 									+ " --> "
-									+ binarytoHexString(booleanListToString(getOutput(input))));
+									+ binaryToHexString(booleanListToString(getOutput(input))));
 					return;
 				} else {
 					table.put(minCutValues, input);
@@ -576,17 +580,17 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println("Constructing circuit...");
 		SHA1 circuit = new SHA1();
 
-		// // Construct empty string input
-		// List<Boolean> input = generateSHA1Input("abc");
-		//
-		// // Input
-		// System.out.println("Input:");
-		// System.out.println(binarytoHexString(booleanListToString(input)));
-		//
-		// // Output
-		// System.out.println("Output:");
-		// System.out.println(binarytoHexString(booleanListToString(circuit
-		// .getOutput(input))));
+		// Construct empty string input
+		List<Boolean> input = generateSHA1Input("");
+
+		// Input
+		System.out.println("Input:");
+		System.out.println(binaryToHexString(booleanListToString(input)));
+
+		// Output
+		System.out.println("Output:");
+		System.out.println(binaryToHexString(booleanListToString(circuit
+				.getOutput(input))));
 
 		// Comma delineated output
 		try {

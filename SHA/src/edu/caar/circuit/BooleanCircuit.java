@@ -3,7 +3,6 @@ package edu.caar.circuit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -755,35 +754,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		}
 		return minCutEdges;
 	}
-	
-	/**
-	 * Implementation of Hao and Orlin min-cut algorithm
-	 */
-	public void findMinCut() {
-		// S := {s}
-		Set<Gate> sSet = new HashSet<Gate>();
-		sSet.add(source);
-		// BestValue := Inf
-		int bestValue = Integer.MAX_VALUE;
-		while (!sSet.containsAll(getVertices())) {
-			// Select some node t' in N-S
-			Gate tPrime = null;
-			for (Gate gate : getVertices()) {
-				if (!sSet.contains(gate)) {
-					tPrime = gate;
-					break;
-				}
-			}
-			// TODO: Determine a minimum S-t' cut
-			
-			// z := u(S*, n-S*)
-			
-		}
-	}
-	
-	private void modifiedInitialize() {
-		
-	}
 
 	/* -------------------- METHODS FOR SIMPLIFYING CIRCUIT -------------------- */
 
@@ -1319,6 +1289,10 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	public static List<Boolean> intToBooleanList(int number) {
 		List<Boolean> list = new ArrayList<Boolean>();
 		String intString = Integer.toBinaryString(number);
+		// Pad to 32 bits
+		for (int i = 0; i < 32 - intString.length(); i++) {
+			list.add(false);
+		}
 		for (int i = 0; i < intString.length(); i++) {
 			list.add(intString.charAt(i) == '1');
 		}
@@ -1363,7 +1337,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * @param binaryStr
 	 * @return hexString
 	 */
-	public static String binarytoHexString(String binaryStr) {
+	public static String binaryToHexString(String binaryStr) {
 		StringBuilder sb = new StringBuilder();
 		String substring;
 		for (int i = 0; i < binaryStr.length() / 4; i++) {
@@ -1373,7 +1347,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		return sb.toString();
 	}
 
-	public static String hextoBinaryString(String hexStr) {
+	public static String hexToBinaryString(String hexStr) {
 		StringBuilder sb = new StringBuilder();
 		String substring;
 		for (int i = 0; i < hexStr.length(); i++) {

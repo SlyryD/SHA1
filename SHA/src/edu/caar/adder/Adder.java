@@ -1,8 +1,8 @@
 package edu.caar.adder;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 
 import edu.caar.circuit.BooleanCircuit;
 import edu.caar.circuit.Edge;
@@ -19,8 +19,6 @@ public class Adder extends BooleanCircuit {
 	// Serialization ID
 	private static final long serialVersionUID = -87857988086683485L;
 
-	private int size;
-
 	HashMap<String, String> table;
 
 	/**
@@ -28,7 +26,6 @@ public class Adder extends BooleanCircuit {
 	 */
 	public Adder() {
 		super();
-		size = 32;
 		initializeGraph();
 		table = new HashMap<String, String>();
 	}
@@ -40,9 +37,7 @@ public class Adder extends BooleanCircuit {
 	 */
 	public Adder(int num1, int num2) {
 		super();
-		List<Boolean> input1 = BooleanCircuit.intToBooleanList(num1), input2 = BooleanCircuit
-				.intToBooleanList(num2);
-		size = Math.max(input1.size(), input2.size());
+		List<Boolean> input1 = intToBooleanList(num1), input2 = intToBooleanList(num2);
 		initializeGraph();
 		setInput(input1, input2);
 	}
@@ -51,32 +46,55 @@ public class Adder extends BooleanCircuit {
 	 * Initializes graph of circuit
 	 */
 	public void initializeGraph() {
-		// Add edges to create linking structure
-		Gate input1, input2, carryover, xor;
-		input1 = getInputNode();
-		input2 = getInputNode();
-		addEdge(new Edge(), xor(input1, input2), getOutputNode(),
-				EdgeType.DIRECTED);
-		carryover = and(input1, input2);
-		// Full adders
-		for (int i = 1; i < size; i++) {
-			input1 = getInputNode();
-			input2 = getInputNode();
-			xor = xor(input1, input2);
-			addEdge(new Edge(), xor(xor, carryover), getOutputNode(),
-					EdgeType.DIRECTED);
-			carryover = or(and(input1, input2), and(xor, carryover));
+		List<Gate> input1 = new ArrayList<Gate>(32), input2 = new ArrayList<Gate>(
+				32);
+		for (int i = 0; i < 32; i++) {
+			input1.add(getInputNode());
+		}
+		for (int i = 0; i < 32; i++) {
+			input2.add(getInputNode());
+		}
+		List<Gate> output = add(input1, input2);
+		for (Gate gate : output) {
+			addEdge(new Edge(), gate, getOutputNode(), EdgeType.DIRECTED);
 		}
 	}
 
+	/**
+	 * Creates circuit which adds two 32-bit numbers (mod 2^32). Does not modify
+	 * original lists.
+	 * 
+	 * @param input1
+	 * @param input2
+	 */
+	public List<Gate> add(List<Gate> input1, List<Gate> input2) {
+		if (input1.size() != 32 || input2.size() != 32) {
+			throw new IllegalArgumentException("Input invalid length");
+		}
+		List<Gate> outputGates = new ArrayList<Gate>(32);
+		// Half adder
+		Gate xor;
+		outputGates.add(0, xor(input1.get(31), input2.get(31)));
+		Gate carryover = and(input1.get(31), input2.get(31));
+		// Full adders
+		for (int i = 30; i > 0; i--) {
+			xor = xor(input1.get(i), input2.get(i));
+			outputGates.add(0, xor(xor, carryover));
+			carryover = or(and(input1.get(i), input2.get(i)),
+					and(xor, carryover));
+		}
+		// Final adder
+		outputGates.add(0, xor(xor(input1.get(0), input2.get(0)), carryover));
+		// Return output gates
+		return outputGates;
+	}
+
 	public void setInput(List<Boolean> input1, List<Boolean> input2) {
-		ListIterator<Boolean> it1 = input1.listIterator(input1.size()), it2 = input2
-				.listIterator(input2.size());
-		for (int i = 0; i < size; i++) {
-			setAndFixValue(inputNodes.get(2 * i),
-					it1.hasPrevious() ? it1.previous() : false);
-			setAndFixValue(inputNodes.get(2 * i),
-					it2.hasPrevious() ? it2.previous() : false);
+		for (int i = 0; i < 32; i++) {
+			setValue(inputNodes.get(i), input1.get(i));
+		}
+		for (int i = 0; i < 32; i++) {
+			setValue(inputNodes.get(i + 32), input2.get(i));
 		}
 	}
 
@@ -152,6 +170,11 @@ public class Adder extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Create adder
+		Adder temp = new Adder(64, 0);
+		System.out.println(booleanListToString(temp.getGateValues(temp
+				.getInputNodes())));
+		System.out.println(booleanListToString(temp.getOutput()));
+
 		System.out.println("Constructing circuit...");
 		Adder circuit = new Adder();
 
