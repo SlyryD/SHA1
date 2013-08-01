@@ -25,9 +25,6 @@ public class MD4 extends BooleanCircuit {
 	// Hash table for birthday attack
 	HashMap<String, String> table;
 
-	// TODO: Debug list
-	List<List<Gate>> debugList = new ArrayList<List<Gate>>();
-
 	/**
 	 * Constructs MD4 circuit graph
 	 */
@@ -52,9 +49,8 @@ public class MD4 extends BooleanCircuit {
 				15, 0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15 };
 
 		// Number of bit positions for left shifts (s[j])
-		int[] sArray = new int[] { 3, 7, 11, 19, 3, 7, 11, 19, 3, 7, 11, 19, 3,
-				7, 11, 19, 3, 5, 9, 13, 3, 5, 9, 13, 3, 5, 9, 13, 3, 5, 9, 13,
-				3, 9, 11, 15, 3, 9, 11, 15, 3, 9, 11, 15, 3, 9, 11, 15 };
+		int[][] sArray = new int[][] { { 3, 7, 11, 19 }, { 3, 5, 9, 13 },
+				{ 3, 9, 11, 15 } };
 
 		// Temporary storage (X[j])
 		List<Gate> xEntry;
@@ -95,29 +91,18 @@ public class MD4 extends BooleanCircuit {
 		// Temporary list of 32 gates
 		List<Gate> tList;
 
-		// TODO: Debug
-		for (int i = 0; i < 4; i++) {
-			debugList.add(wVariables.get(i));
-		}
-
 		// Round 1
 		for (int i = 0; i < 16; i++) {
-			// t := (A + f(B, C, D) + X[z[j]] + y1)
+			// t := (A + f(B, C, D) + X[z[j]] + 0)
 			tList = add(
 					wVariables.get(0),
 					add(fFunction(wVariables.get(1), wVariables.get(2),
-							wVariables.get(3)),
-							add(xStorage.get(zArray[i]), yConstants.get(0))));
+							wVariables.get(3)), xStorage.get(zArray[i])));
 			// (A, B, C, D) := (D, rotls(t), B, C)
 			wVariables.set(0, wVariables.get(3));
 			wVariables.set(3, wVariables.get(2));
 			wVariables.set(2, wVariables.get(1));
-			wVariables.set(1, rotl(tList, sArray[i]));
-
-			// TODO: Debug
-			for (int j = 0; j < 4; j++) {
-				debugList.add(wVariables.get(j));
-			}
+			wVariables.set(1, rotl(tList, sArray[0][i % 4]));
 		}
 
 		// Round 2
@@ -132,12 +117,7 @@ public class MD4 extends BooleanCircuit {
 			wVariables.set(0, wVariables.get(3));
 			wVariables.set(3, wVariables.get(2));
 			wVariables.set(2, wVariables.get(1));
-			wVariables.set(1, rotl(tList, sArray[i]));
-
-			// TODO: Debug
-			for (int j = 0; j < 4; j++) {
-				debugList.add(wVariables.get(j));
-			}
+			wVariables.set(1, rotl(tList, sArray[1][i % 4]));
 		}
 
 		// Round 3
@@ -152,23 +132,21 @@ public class MD4 extends BooleanCircuit {
 			wVariables.set(0, wVariables.get(3));
 			wVariables.set(3, wVariables.get(2));
 			wVariables.set(2, wVariables.get(1));
-			wVariables.set(1, rotl(tList, sArray[i]));
-
-			// TODO: Debug
-			for (int j = 0; j < 4; j++) {
-				debugList.add(wVariables.get(j));
-			}
+			wVariables.set(1, rotl(tList, sArray[2][i % 4]));
 		}
 
 		// Update chaining variables
 		List<Gate> hValue;
 		for (int i = 0; i < 4; i++) {
-			hValue = changeEndianess(add(hConstants.get(i), wVariables.get(i)));
-			for (int j = 0; j < 32; j++) {
-				addEdge(new Edge(), hValue.get(j), getOutputNode(),
+			hValue = add(hConstants.get(i), wVariables.get(i));
+			for (int j = 3; j >= 0; j--) {
+				for (int k = 0; k < 8; k++) {
+				addEdge(new Edge(), hValue.get(8 * j + k), getOutputNode(),
 						EdgeType.DIRECTED);
+				}
 			}
 		}
+		
 
 		// Set y constants and simplify circuit (builds constants into circuit)
 		List<Boolean> constants = getYConstants();
@@ -215,44 +193,34 @@ public class MD4 extends BooleanCircuit {
 		return outputGates;
 	}
 
-	// /**
-	// * Creates circuit which adds two 32-bit numbers (mod 2^32). Does not
-	// modify
-	// * original lists.
-	// *
-	// * @param input1
-	// * @param input2
-	// */
-	// // TODO: Deal with endianess
 	// public List<Gate> add(List<Gate> input1, List<Gate> input2) {
-	// // Inputs must be 32-bits long
 	// if (input1.size() != 32 || input2.size() != 32) {
 	// throw new IllegalArgumentException("Input invalid length");
 	// }
-	//
-	// // Output gates of adder circuit
 	// List<Gate> outputGates = new ArrayList<Gate>(32);
-	//
 	// // Half adder
-	// Gate xor;
-	// outputGates.add(xor(input1.get(7), input2.get(7)));
-	// Gate carryover = and(input1.get(7), input2.get(7));
-	//
-	// // Full adders
+	// Gate xor, carryover = null;
 	// int index;
-	// for (int i = 0; i < 4; i++) {
+	// // Full adders
+	// for (int i = 0; i < 32; i += 8) {
 	// for (int j = 8; j > 0; j--) {
-	// index = (i << 3) + j - 1;
+	// index = i + j - 1;
+	// if (index == 7) {
+	// // Half adder
+	// outputGates.add(xor(input1.get(index), input2.get(index)));
+	// carryover = and(input1.get(index), input2.get(index));
+	// } else if (index == 24) {
+	// // Final adder
+	// outputGates.add(i,
+	// xor(xor(input1.get(0), input2.get(0)), carryover));
+	// } else {
 	// xor = xor(input1.get(index), input2.get(index));
-	// outputGates.add(index, xor(xor, carryover));
+	// outputGates.add(i, xor(xor, carryover));
 	// carryover = or(and(input1.get(index), input2.get(index)),
 	// and(xor, carryover));
 	// }
 	// }
-	//
-	// // Final adder
-	// outputGates.add(24, xor(xor(input1.get(0), input2.get(0)), carryover));
-	//
+	// }
 	// // Return output gates
 	// return outputGates;
 	// }
@@ -300,20 +268,6 @@ public class MD4 extends BooleanCircuit {
 	}
 
 	/**
-	 * Returns gates in reverse byte-endian order
-	 * 
-	 * @param gates
-	 * @return gates
-	 */
-	private List<Gate> changeEndianess(List<Gate> gates) {
-		List<Gate> newList = new ArrayList<Gate>(32);
-		for (int i = 4; i > 0; i--) {
-			newList.addAll(gates.subList((i - 1) << 3, i << 3));
-		}
-		return newList;
-	}
-
-	/**
 	 * Returns list of gates rotated left given numbers. Does not affect
 	 * original list.
 	 * 
@@ -322,15 +276,15 @@ public class MD4 extends BooleanCircuit {
 	 * @return rotl(list, number)
 	 */
 	public List<Gate> rotl(List<Gate> list, int number) {
-		List<Gate> endianList = changeEndianess(list);
-		List<Gate> newList = endianList.subList(number, 32);
-		newList.addAll(endianList.subList(0, number));
-		return changeEndianess(newList);
+		List<Gate> newList = list.subList(number, 32);
+		newList.addAll(list.subList(0, number));
+		return newList;
 	}
 
 	/**
-	 * Fix input in MD4 circuit
+	 * Fix input in MD4 circuit (from scratch)
 	 */
+	// TODO: Fix
 	public void fixInput(BufferedWriter out) throws IOException {
 		// Reset values and fixed gates
 		resetAllGates();
@@ -341,44 +295,42 @@ public class MD4 extends BooleanCircuit {
 			out.write("-1,");
 		}
 
+		// Input map
+		Map<Integer, Boolean> input = new HashMap<Integer, Boolean>();
+
 		// Fix padding
-		setAndFixValue(inputNodes.get(length), true);
+		input.put(getIndex(length), true);
 		out.write("1,");
 		for (int i = length + 1; i < 448; i++) {
-			setAndFixValue(inputNodes.get(i), false);
+			input.put(getIndex(i), false);
 			out.write("0,");
 		}
 
 		// Fix message length padding
 		String lengthStr = getLengthRep(length);
-		for (int i = 0; i < 64; i++) {
-			if (lengthStr.charAt(i) == '1') {
-				setAndFixValue(inputNodes.get(i + 448), true);
-				out.write("1,");
-			} else {
-				setAndFixValue(inputNodes.get(i + 448), false);
-				out.write("0,");
-			}
+		for (int i = 448; i < 512; i++) {
+			input.put(getIndex(i), lengthStr.charAt(i) == '1');
+			out.write(lengthStr.charAt(i) + ",");
 		}
 
 		// Fix constants
 		List<Boolean> constants = getHConstants();
 		for (int i = 0; i < 160; i++) {
-			setAndFixValue(inputNodes.get(i + 512), constants.get(i));
+			input.put(getIndex(i + 512), constants.get(i));
 			out.write(constants.get(i) ? "1," : "0,");
 		}
+
+		// Set and fix input
+		setAndFixInput(input);
+
+		// Write number of fixed outputs
 		out.write(672 - length + ",");
 	}
 
+	// TODO: Fix
 	public void randomlyFixInput(BufferedWriter out) throws IOException {
+		// Reset fixed gates and values
 		resetAllGates();
-
-		// // Write to file
-		// for (int i = 0; i < 672; i++) {
-		// out.write(inputNodes.get(i).toString() + ",");
-		// }
-		// out.write("Num Fixed");
-		// out.write("Min-cut Weight\n");
 
 		// Fix input
 		int number = 500;
@@ -443,6 +395,52 @@ public class MD4 extends BooleanCircuit {
 		System.out.println("No collisions with given fixed input!!");
 	}
 
+	// /**
+	// * Returns gates in reverse byte-endian order
+	// *
+	// * @param gates
+	// * @return gates
+	// */
+	// private List<Gate> changeEndianess(List<Gate> gates) {
+	// List<Gate> newList = new ArrayList<Gate>(32);
+	// for (int i = 4; i > 0; i--) {
+	// newList.addAll(gates.subList((i - 1) << 3, i << 3));
+	// }
+	// return newList;
+	// }
+
+	private static int getIndex(int index) {
+		int i = index % 32, j;
+		if (i < 8) {
+			j = (index % 8) + 24;
+		} else if (i < 16) {
+			j = (index % 8) + 8;
+		} else if (i < 24) {
+			j = (index % 8) - 8;
+		} else {
+			j = (index % 8) - 24;
+		}
+		return index - i + j;
+	}
+
+	/**
+	 * Returns values in reverse byte-endian order
+	 * 
+	 * @param gates
+	 * @return gates
+	 */
+	private static List<Boolean> changeEndianess(List<Boolean> values) {
+		List<Boolean> newList = new ArrayList<Boolean>(640), wordList;
+		for (int i = 0; i < 640; i += 32) {
+			wordList = new ArrayList<Boolean>(32);
+			for (int j = 32; j > 0; j -= 8) {
+				wordList.addAll(values.subList(i + j - 8, i + j));
+			}
+			newList.addAll(wordList);
+		}
+		return newList;
+	}
+
 	/**
 	 * Generates random input of random size
 	 * 
@@ -474,14 +472,17 @@ public class MD4 extends BooleanCircuit {
 
 		// 64-bit representation of input length
 		String lengthStr = getLengthRep(size);
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 32; i++) {
 			input.add(lengthStr.charAt(i) == '1');
+		}
+		for (int i = 0; i < 32; i++) {
+			input.add(false);
 		}
 
 		// Add h constants
 		input.addAll(getHConstants());
 
-		return input;
+		return changeEndianess(input);
 	}
 
 	/**
@@ -522,14 +523,17 @@ public class MD4 extends BooleanCircuit {
 
 		// 64-bit representation of input length
 		String lengthStr = getLengthRep(size);
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 32; i++) {
 			input.add(lengthStr.charAt(i) == '1');
+		}
+		for (int i = 0; i < 32; i++) {
+			input.add(false);
 		}
 
 		// Add h constants
 		input.addAll(getHConstants());
 
-		return input;
+		return changeEndianess(input);
 	}
 
 	/**
@@ -563,65 +567,27 @@ public class MD4 extends BooleanCircuit {
 
 		// 64-bit representation of input length
 		String lengthStr = getLengthRep(size);
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 32; i++) {
 			input.add(lengthStr.charAt(i) == '1');
+		}
+		for (int i = 0; i < 32; i++) {
+			input.add(false);
 		}
 
 		// Add h constants
 		input.addAll(getHConstants());
 
-		return input;
+		return changeEndianess(input);
 	}
 
-	// public static List<Boolean> getHConstants() {
-	// List<Boolean> input = new ArrayList<Boolean>(128);
-	// // IV constants
-	// String[] hConstants = new String[] {
-	// Integer.toBinaryString(0x01234567),
-	// Integer.toBinaryString(0x89abcdef),
-	// Integer.toBinaryString(0xfedcba98),
-	// Integer.toBinaryString(0x76543210) };
-	// for (String h : hConstants) {
-	// for (int i = 0; i < 32 - h.length(); i++) {
-	// input.add(false);
-	// }
-	// for (int i = 0; i < h.length(); i++) {
-	// input.add(h.charAt(i) == '1');
-	// }
-	// }
-	// return input;
-	// }
-
-	// public static List<Boolean> getYConstants() {
-	// List<Boolean> input = new ArrayList<Boolean>(96);
-	// // Additive constants
-	// String[] yConstants = new String[] { Integer.toBinaryString(0),
-	// Integer.toBinaryString(0x999728a5),
-	// Integer.toBinaryString(0x1abe9de6) };
-	// for (String y : yConstants) {
-	// for (int i = 0; i < 32 - y.length(); i++) {
-	// input.add(false);
-	// }
-	// for (int i = 0; i < y.length(); i++) {
-	// input.add(y.charAt(i) == '1');
-	// }
-	// }
-	// return input;
-	// }
-
-	/**
-	 * Returns list of booleans corresponding to bits of h constants
-	 * 
-	 * @return hConstants
-	 */
 	public static List<Boolean> getHConstants() {
-		List<Boolean> input = new ArrayList<Boolean>(160);
+		List<Boolean> input = new ArrayList<Boolean>(128);
 		// IV constants
 		String[] hConstants = new String[] {
-				Integer.toBinaryString(0x67452301),
-				Integer.toBinaryString(0xefcdab89),
-				Integer.toBinaryString(0x98badcfe),
-				Integer.toBinaryString(0x10325476) };
+				Integer.toBinaryString(0x01234567),
+				Integer.toBinaryString(0x89abcdef),
+				Integer.toBinaryString(0xfedcba98),
+				Integer.toBinaryString(0x76543210) };
 		for (String h : hConstants) {
 			for (int i = 0; i < 32 - h.length(); i++) {
 				input.add(false);
@@ -639,7 +605,7 @@ public class MD4 extends BooleanCircuit {
 	 * @return yConstants
 	 */
 	public static List<Boolean> getYConstants() {
-		List<Boolean> input = new ArrayList<Boolean>(128);
+		List<Boolean> input = new ArrayList<Boolean>(96);
 		// Additive constants
 		String[] yConstants = new String[] { Integer.toBinaryString(0),
 				Integer.toBinaryString(0x5a827999),
@@ -662,26 +628,11 @@ public class MD4 extends BooleanCircuit {
 	 * @return lengthString
 	 */
 	public static String getLengthRep(int length) {
-		String binaryStr = Integer.toBinaryString(Integer.reverseBytes(length));
-		StringBuilder sb = new StringBuilder(binaryStr);
-		for (int i = 0; i < 64 - binaryStr.length(); i++) {
-			sb.append('0');
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * Returns hex representation of binary string (little-endian)
-	 * 
-	 * @param binaryStr
-	 * @return hexString
-	 */
-	public static String binaryToHexString(String binaryStr) {
+		// Fix message length padding
 		StringBuilder sb = new StringBuilder();
-		String substring;
-		for (int i = 0; i < binaryStr.length() >> 2; i++) {
-			substring = binaryStr.substring(i << 2, (i + 1) << 2);
-			sb.append(Integer.toHexString(Integer.parseInt(substring, 2)));
+		for (int i = 0; i < 32; i += 8) {
+			sb.append(hexToBinaryString(String.format("%02x",
+					(length >> i) & 0xFF)));
 		}
 		return sb.toString();
 	}
@@ -707,19 +658,6 @@ public class MD4 extends BooleanCircuit {
 		System.out.println("Output:");
 		System.out.println(binaryToHexString(booleanListToString(circuit
 				.getOutput(input))));
-
-		System.out.println("Step\tA\t\tB\t\tC\t\tD\t\t");
-		for (int i = 0; i < circuit.debugList.size() >> 2; i++) {
-			System.out.print(i + "\t");
-			System.out.print(binaryToHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get(i << 2)))) + "\t");
-			System.out.print(binaryToHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get((i << 2) + 1)))) + "\t");
-			System.out.print(binaryToHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get((i << 2) + 2)))) + "\t");
-			System.out.println(binaryToHexString(booleanListToString(circuit
-					.getGateValues(circuit.debugList.get((i << 2) + 3)))));
-		}
 
 		// // Comma delineated output
 		// try {

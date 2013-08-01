@@ -152,92 +152,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	/* --------------------- GET/SET INPUT/OUTPUT METHODS --------------------- */
 
 	/**
-	 * Generates random input with fixed values for circuit
-	 * 
-	 * @param circuit
-	 * @return input
-	 */
-	public String generateInput() {
-		StringBuilder sb = new StringBuilder();
-		for (Gate gate : inputNodes) {
-			if (fixed.containsKey(gate)) {
-				sb.append(values.get(gate) ? "1" : "0");
-			} else {
-				sb.append(getRandBoolean() ? "1" : "0");
-			}
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * Set input of circuit
-	 * 
-	 * @param input
-	 */
-	public void setInput(List<Boolean> input) {
-		for (int i = 0; i < inputNodes.size(); i++) {
-			values.put(inputNodes.get(i), input.get(i));
-		}
-	}
-
-	/**
-	 * Evaluates circuit at each gate from the min cut
-	 */
-	public void minCutSetInput() {
-		Set<Edge> minCutEdges = getMinCutEdges();
-		System.out.println(minCutEdges);
-		Gate source, dest;
-
-		resetAllGates();
-		for (Edge edge : minCutEdges) {
-			source = getSource(edge);
-			dest = getDest(edge);
-			if (source.getType() == Gate.Type.INPUT) {
-				setAndFixValue(source, getRandBoolean());
-			} else if (dest.getType() == Gate.Type.INPUT) {
-				setAndFixValue(dest, getRandBoolean());
-			}
-		}
-	}
-
-	/**
-	 * Get output if input already set
-	 * 
-	 * @return output
-	 */
-	public List<Boolean> getOutput() {
-		evaluateCircuit();
-		List<Boolean> output = new ArrayList<Boolean>(outputNodes.size());
-		for (int i = 0; i < outputNodes.size(); i++) {
-			output.add(values.get(outputNodes.get(i)));
-		}
-		return output;
-	}
-
-	/**
-	 * Set input, evaluate, and return output of circuit
-	 * 
-	 * @param input
-	 * @return output
-	 */
-	public List<Boolean> getOutput(List<Boolean> input) {
-		setInput(input);
-		return getOutput();
-	}
-
-	/**
-	 * Get output from string input
-	 * 
-	 * @param input
-	 * @return output
-	 */
-	public List<Boolean> getOutput(String input) {
-		return getOutput(stringToBooleanList(input));
-	}
-
-	/* -------------------- VALUES AND FIXED GATES METHODS -------------------- */
-
-	/**
 	 * Returns gate value
 	 * 
 	 * @param gate
@@ -321,6 +235,115 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	public void resetAllGates() {
 		resetFixed();
 		resetValues();
+	}
+
+	/**
+	 * Generates random input with fixed values for circuit
+	 * 
+	 * @param circuit
+	 * @return input
+	 */
+	public String generateInput() {
+		StringBuilder sb = new StringBuilder();
+		for (Gate gate : inputNodes) {
+			if (isFixed(gate)) {
+				sb.append(values.get(gate) ? "1" : "0");
+			} else {
+				sb.append(getRandBoolean() ? "1" : "0");
+			}
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Set input of circuit
+	 * 
+	 * @param input
+	 */
+	public void setInput(List<Boolean> input) {
+		int size = Math.min(input.size(), inputNodes.size());
+		for (int i = 0; i < size; i++) {
+			setValue(inputNodes.get(i), input.get(i));
+		}
+	}
+
+	/**
+	 * Set input of circuit
+	 * 
+	 * @param input
+	 */
+	public void setInput(Map<Integer, Boolean> input) {
+		for (int i : input.keySet()) {
+			setValue(inputNodes.get(i), input.get(i));
+		}
+	}
+
+	/**
+	 * Set and fix input of circuit
+	 * 
+	 * @param input
+	 */
+	public void setAndFixInput(Map<Integer, Boolean> input) {
+		for (int i : input.keySet()) {
+			setAndFixValue(inputNodes.get(i), input.get(i));
+		}
+	}
+
+	/**
+	 * Sets and fixes values along min cut if possible
+	 */
+	public void minCutSetInput() {
+		// Calculate min cut
+		Set<Edge> minCutEdges = getMinCutEdges();
+		System.out.println(minCutEdges);
+		// Reset all fixed gates
+		resetAllGates();
+		// Fix input along min cut if possible
+		Gate source, dest;
+		for (Edge edge : minCutEdges) {
+			source = getSource(edge);
+			dest = getDest(edge);
+			if (source.getType() == Gate.Type.INPUT) {
+				setAndFixValue(source, getRandBoolean());
+			} else if (dest.getType() == Gate.Type.INPUT) {
+				setAndFixValue(dest, getRandBoolean());
+			}
+		}
+	}
+
+	/**
+	 * Get output if input already set
+	 * 
+	 * @return output
+	 */
+	public List<Boolean> getOutput() {
+		evaluateCircuit();
+		List<Boolean> output = new ArrayList<Boolean>(outputNodes.size());
+		for (int i = 0; i < outputNodes.size(); i++) {
+			output.add(values.get(outputNodes.get(i)));
+		}
+		return output;
+	}
+
+	/**
+	 * Set input, evaluate, and return output of circuit
+	 * 
+	 * @param input
+	 * @return output
+	 */
+	public List<Boolean> getOutput(List<Boolean> input) {
+		setInput(input);
+		return getOutput();
+	}
+
+	/**
+	 * Get output from string input
+	 * 
+	 * @param input
+	 * @return output
+	 */
+	public List<Boolean> getOutput(String input) {
+		return getOutput(stringToBooleanList(input));
 	}
 
 	/* ------------------- METHODS FOR CONSTRUCTING CIRCUIT ------------------- */
@@ -1290,7 +1313,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		List<Boolean> list = new ArrayList<Boolean>();
 		String intString = Integer.toBinaryString(number);
 		// Pad to 32 bits
-		for (int i = 0; i < 32 - intString.length(); i++) {
+		for (int i = intString.length(); i < 32; i++) {
 			list.add(false);
 		}
 		for (int i = 0; i < intString.length(); i++) {
@@ -1309,6 +1332,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		StringBuilder sb = new StringBuilder();
 		for (Boolean value : list) {
 			if (value == null) {
+				// TODO: Does this work?
 				sb.append("0");
 			} else {
 				sb.append(value ? "1" : "0");
@@ -1339,10 +1363,9 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 */
 	public static String binaryToHexString(String binaryStr) {
 		StringBuilder sb = new StringBuilder();
-		String substring;
-		for (int i = 0; i < binaryStr.length() / 4; i++) {
-			substring = binaryStr.substring(4 * i, 4 * (i + 1));
-			sb.append(Integer.toHexString(Integer.parseInt(substring, 2)));
+		for (int i = 0; i < binaryStr.length(); i += 8) {
+			sb.append(String.format("%02x", Integer.parseInt(
+					binaryStr.substring(i, i + 8), 2)));
 		}
 		return sb.toString();
 	}
@@ -1353,7 +1376,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		for (int i = 0; i < hexStr.length(); i++) {
 			substring = hexStr.substring(i, i + 1);
 			substring = Integer.toBinaryString(Integer.parseInt(substring, 16));
-			for (int j = 0; j < 4 - substring.length(); j++) {
+			for (int j = substring.length(); j < 4; j++) {
 				sb.append("0");
 			}
 			sb.append(substring);

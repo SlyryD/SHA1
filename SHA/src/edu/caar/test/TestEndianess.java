@@ -34,7 +34,11 @@ public class TestEndianess {
 
 	public static String pad(String string) {
 		StringBuilder sb = new StringBuilder(string);
-		for (int i = 0; i < 64 - string.length(); i++) {
+		int length = string.length();
+		for (; length % 8 != 0; length++) {
+			sb.insert(0, '0');
+		}
+		for (int i = 0; i < 64 - length; i++) {
 			sb.append('0');
 		}
 		return sb.toString();
@@ -45,7 +49,7 @@ public class TestEndianess {
 	 */
 	public static void main(String[] args) {
 		System.out.println("Test little endian length rep");
-		int a = 1923485;
+		int a = 48;
 		System.out.println(Integer.toBinaryString(a));
 		System.out
 				.println(pad(Integer.toBinaryString(Integer.reverseBytes(a))));

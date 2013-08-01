@@ -520,6 +520,28 @@ public class SHA1 extends BooleanCircuit {
 		return input;
 	}
 
+	/**
+	 * Returns 64-bit representation of length
+	 * 
+	 * @param length
+	 * @return lengthString
+	 */
+	public static String getLengthRep(int length) {
+		// Fix message length padding
+		String lengthStr = Integer.toBinaryString(length);
+		StringBuilder sb = new StringBuilder();
+		for (int i = lengthStr.length(); i < 64; i++) {
+			sb.append('0');
+		}
+		sb.append(lengthStr);
+		return sb.toString();
+	}
+
+	/**
+	 * Returns list of booleans corresponding to bits of h constants
+	 * 
+	 * @return hConstants
+	 */
 	public static List<Boolean> getHConstants() {
 		List<Boolean> input = new ArrayList<Boolean>(160);
 		// IV constants
@@ -540,6 +562,11 @@ public class SHA1 extends BooleanCircuit {
 		return input;
 	}
 
+	/**
+	 * Returns list of booleans corresponding to bits of y constants
+	 * 
+	 * @return yConstants
+	 */
 	public static List<Boolean> getYConstants() {
 		List<Boolean> input = new ArrayList<Boolean>(128);
 		// Additive constants
