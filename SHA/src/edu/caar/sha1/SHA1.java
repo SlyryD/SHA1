@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import edu.caar.circuit.BooleanCircuit;
-import edu.caar.circuit.Edge;
 import edu.caar.circuit.Gate;
-import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
  * Models circuit for SHA-1 hash algorithm
@@ -178,8 +176,9 @@ public class SHA1 extends BooleanCircuit {
 		for (int i = 0; i < 5; i++) {
 			hValue = add(hConstants.get(i), wVariables.get(i));
 			for (int j = 0; j < 32; j++) {
-				addEdge(new Edge(), hValue.get(j), getOutputNode(),
-						EdgeType.DIRECTED);
+				// addEdge(new Edge(), hValue.get(j), getOutputNode(),
+				// EdgeType.DIRECTED);
+				outputNodes.add(hValue.get(j));
 			}
 		}
 
@@ -290,7 +289,7 @@ public class SHA1 extends BooleanCircuit {
 	public void fixInput(BufferedWriter out) throws IOException {
 		resetAllGates();
 		// Create message with given length
-		int length = 64;
+		int length = 24;
 		for (int i = 0; i < length; i++) {
 			out.write("-1,");
 		}
@@ -607,17 +606,17 @@ public class SHA1 extends BooleanCircuit {
 		System.out.println("Constructing circuit...");
 		SHA1 circuit = new SHA1();
 
-		// Construct empty string input
-		List<Boolean> input = generateSHA1Input("");
-
-		// Input
-		System.out.println("Input:");
-		System.out.println(binaryToHexString(booleanListToString(input)));
-
-		// Output
-		System.out.println("Output:");
-		System.out.println(binaryToHexString(booleanListToString(circuit
-				.getOutput(input))));
+		// // Construct empty string input
+		// List<Boolean> input = generateSHA1Input("");
+		//
+		// // Input
+		// System.out.println("Input:");
+		// System.out.println(binaryToHexString(booleanListToString(input)));
+		//
+		// // Output
+		// System.out.println("Output:");
+		// System.out.println(binaryToHexString(booleanListToString(circuit
+		// .getOutput(input))));
 
 		// Comma delineated output
 		try {
@@ -627,13 +626,13 @@ public class SHA1 extends BooleanCircuit {
 
 			// Fix inputs and simplify circuit
 			System.out.println("Fixing input...");
-			circuit.fixInput(out);
-			// circuit.randomlyFixInput(out);
+			// circuit.fixInput(out);
+			circuit.randomlyFixInput(out);
 
 			// Simplify circuit
 			System.out.println("Simplifying circuit...");
 			List<Gate> variableInputs = circuit.simplifyCircuit();
-
+			
 			// Print collisions
 			// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
 			// variableInputs.size()));
@@ -661,7 +660,7 @@ public class SHA1 extends BooleanCircuit {
 			// Close stream
 			out.close();
 		} catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace();
 		}
 
 		// // Birthday attack

@@ -6,9 +6,7 @@ import java.util.List;
 
 import edu.caar.circuit.BooleanCircuit;
 import edu.caar.circuit.DisplayCircuit;
-import edu.caar.circuit.Edge;
 import edu.caar.circuit.Gate;
-import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
  * Models circuit for adding two bits and keeps track of overflow
@@ -37,10 +35,14 @@ public class TestCircuit extends BooleanCircuit {
 		Gate or = or(getInputNode(), and(getInputNode(), getInputNode()));
 		Gate xor = xor(getInputNode(), or);
 
-		addEdge(new Edge(), or, getOutputNode(), EdgeType.DIRECTED);
-		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
-		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
-		addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
+		outputNodes.add(or);
+		for (int i = 0; i < 3; i++) {
+			outputNodes.add(xor);
+		}
+		// addEdge(new Edge(), or, getOutputNode(), EdgeType.DIRECTED);
+		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
+		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
+		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
 	}
 
 	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {

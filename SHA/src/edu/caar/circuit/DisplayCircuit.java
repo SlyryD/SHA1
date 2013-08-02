@@ -114,7 +114,6 @@ public class DisplayCircuit {
 							180f, Arc2D.OPEN), false);
 					break;
 				case INPUT:
-				case OUTPUT:
 				default:
 					return new Ellipse2D.Float(-10f, -10f, 20f, 20f);
 				}
@@ -128,8 +127,6 @@ public class DisplayCircuit {
 				switch (gate.getType()) {
 				case INPUT:
 					return Color.GREEN;
-				case OUTPUT:
-					return Color.RED;
 				case NOT:
 					return Color.PINK;
 				case AND:

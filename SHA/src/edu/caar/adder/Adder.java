@@ -5,9 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import edu.caar.circuit.BooleanCircuit;
-import edu.caar.circuit.Edge;
 import edu.caar.circuit.Gate;
-import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
  * Models circuit for adding two bits and keeps track of overflow
@@ -54,10 +52,11 @@ public class Adder extends BooleanCircuit {
 		for (int i = 0; i < 32; i++) {
 			input2.add(getInputNode());
 		}
-		List<Gate> output = add(input1, input2);
-		for (Gate gate : output) {
-			addEdge(new Edge(), gate, getOutputNode(), EdgeType.DIRECTED);
-		}
+		outputNodes.addAll(add(input1, input2));
+		// List<Gate> output = add(input1, input2);
+		// for (Gate gate : output) {
+		// addEdge(new Edge(), gate, getOutputNode(), EdgeType.DIRECTED);
+		// }
 	}
 
 	/**
@@ -170,11 +169,6 @@ public class Adder extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Create adder
-		Adder temp = new Adder(64, 0);
-		System.out.println(booleanListToString(temp.getGateValues(temp
-				.getInputNodes())));
-		System.out.println(booleanListToString(temp.getOutput()));
-
 		System.out.println("Constructing circuit...");
 		Adder circuit = new Adder();
 
@@ -192,7 +186,7 @@ public class Adder extends BooleanCircuit {
 		long startTime = System.nanoTime();
 		circuit.birthdayAttack();
 		long endTime = System.nanoTime();
-		System.out.println(endTime - startTime + "ns");
+		System.out.println(((endTime - startTime) >> 29) + "s");
 	}
 
 }

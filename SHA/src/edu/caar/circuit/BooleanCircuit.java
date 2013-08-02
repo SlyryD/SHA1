@@ -76,9 +76,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		case INPUT:
 			inputNodes.add(gate);
 			break;
-		case OUTPUT:
-			outputNodes.add(gate);
-			break;
 		case NOT:
 			notGates.add(gate);
 			break;
@@ -109,12 +106,10 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	@Override
 	public boolean removeVertex(Gate gate) {
 		version++;
+
 		switch (gate.getType()) {
 		case INPUT:
 			inputNodes.remove(gate);
-			break;
-		case OUTPUT:
-			outputNodes.remove(gate);
 			break;
 		case NOT:
 			notGates.remove(gate);
@@ -149,17 +144,22 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		return super.addEdge(e, v1, v2, edge_type);
 	}
 
-	/* --------------------- GET/SET INPUT/OUTPUT METHODS --------------------- */
-
 	/**
-	 * Returns gate value
+	 * Add new edge between v1 and v2
 	 * 
-	 * @param gate
-	 * @return value
+	 * @param v1
+	 * @param v2
+	 * @return success
 	 */
-	public Boolean getValue(Gate gate) {
-		return values.get(gate);
+	public Edge addEdge(Gate v1, Gate v2) {
+		Edge edge = new Edge();
+		if (addEdge(edge, v1, v2, EdgeType.DIRECTED)) {
+			return edge;
+		}
+		return null;
 	}
+
+	/* --------------------- GET/SET INPUT/OUTPUT METHODS --------------------- */
 
 	/**
 	 * Returns whether gate is evaluated
@@ -172,13 +172,25 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	}
 
 	/**
+	 * Returns gate value
+	 * 
+	 * @param gate
+	 * @return value
+	 */
+	public Boolean getValue(Gate gate) {
+		return values.get(gate);
+	}
+
+	/**
 	 * Sets value of gate
 	 * 
 	 * @param gate
 	 * @param value
 	 */
 	public void setValue(Gate gate, boolean value) {
-		values.put(gate, value);
+		if (!isFixed(gate)) {
+			values.put(gate, value);
+		}
 	}
 
 	/**
@@ -356,7 +368,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 */
 	public Gate not(Gate input) {
 		Gate output = getNotGate();
-		addEdge(new Edge(), input, output, EdgeType.DIRECTED);
+		addEdge(input, output);
 		return output;
 	}
 
@@ -527,8 +539,8 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 			output = getXorGate();
 			break;
 		}
-		addEdge(new Edge(), input1, output, EdgeType.DIRECTED);
-		addEdge(new Edge(), input2, output, EdgeType.DIRECTED);
+		addEdge(input1, output);
+		addEdge(input2, output);
 		return output;
 	}
 
@@ -596,9 +608,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		switch (gate.getType()) {
 		case INPUT:
 			value = values.get(gate);
-			break;
-		case OUTPUT:
-			value = evaluateVertex(parents.next());
 			break;
 		case NOT:
 			value = values.containsKey(gate) ? values.get(gate)
@@ -725,10 +734,10 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 
 		// Adds edges from source to inputs, and from outputs to sink
 		for (Gate gate : inputNodes) {
-			addEdge(new Edge(), source, gate, EdgeType.DIRECTED);
+			addEdge(source, gate);
 		}
 		for (Gate gate : outputNodes) {
-			addEdge(new Edge(), gate, sink, EdgeType.DIRECTED);
+			addEdge(gate, sink);
 		}
 
 		// Transformer from edge to capacity
@@ -759,9 +768,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		alg.evaluate();
 		System.out.println("The min cut weight is: " + alg.getMaxFlow());
 
-		// Remove source and sink
-		// removeVertex(source);
-		// removeVertex(sink);
+		// Update min cut version
 		minCutVersion = version;
 		return alg.getMinCutEdges();
 	}
@@ -809,7 +816,8 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 		// Edges and gates
 		Edge currEdge, newEdge;
 		Gate source, dest, otherSource, not;
-		// Maintain stack of edge to iterate through
+
+		// Maintain list of edges to iterate through
 		LinkedList<Edge> edges = new LinkedList<Edge>(getOutEdges(gate));
 		while (!edges.isEmpty()) {
 			// Find edge with source and dest gates
@@ -823,12 +831,9 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 				source = getSource(currEdge);
 				dest = getDest(currEdge);
 			}
+
 			// Simplify circuit based on type of dest gate
 			switch (dest.getType()) {
-			case OUTPUT:
-				// Evaluate output
-				values.put(dest, values.get(source));
-				break;
 			case NOT:
 				// Evaluate value at source and add outEdges
 				values.put(dest, !values.get(source));
@@ -841,13 +846,14 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 				if (values.get(source)) {
 					// Value at dest depends on other source
 					for (Gate successor : getSuccessors(dest)) {
-						if (!addEdge(new Edge(), otherSource, successor,
-								EdgeType.DIRECTED)) {
-							newEdge = new Edge();
-							addEdge(newEdge, source, successor,
-									EdgeType.DIRECTED);
-							edges.add(newEdge);
+						if (addEdge(otherSource, successor) == null) {
+							edges.add(addEdge(source, successor));
 						}
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, otherSource);
 					}
 					removeVertex(dest);
 					simplifyUp(source, variableInputs);
@@ -862,6 +868,11 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 						} else {
 							edges.add(newEdge);
 						}
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, source);
 					}
 					removeVertex(dest);
 					simplifyUp(otherSource, variableInputs);
@@ -881,20 +892,26 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 							edges.add(newEdge);
 						}
 					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, source);
+					}
 					removeVertex(dest);
 					simplifyUp(otherSource, variableInputs);
 				} else {
 					// Value at dest depends on other source
 					for (Gate successor : getSuccessors(dest)) {
-						if (!addEdge(new Edge(), otherSource, successor,
-								EdgeType.DIRECTED)) {
-							newEdge = new Edge();
-							addEdge(newEdge, source, successor,
-									EdgeType.DIRECTED);
-							edges.add(newEdge);
+						if (addEdge(otherSource, successor) == null) {
+							edges.add(addEdge(source, successor));
 						}
 					}
 					removeVertex(dest);
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, otherSource);
+					}
 					simplifyUp(source, variableInputs);
 				}
 				break;
@@ -904,18 +921,24 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 					// Value at dest depends on inversion of other source
 					not = not(otherSource);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 				} else {
 					// Value at dest depends on other source
 					for (Gate successor : getSuccessors(dest)) {
-						if (!addEdge(new Edge(), otherSource, successor,
-								EdgeType.DIRECTED)) {
-							newEdge = new Edge();
-							addEdge(newEdge, source, successor,
-									EdgeType.DIRECTED);
-							edges.push(newEdge);
+						if (addEdge(otherSource, successor) == null) {
+							edges.add(addEdge(source, successor));
 						}
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, otherSource);
 					}
 				}
 				removeVertex(dest);
@@ -927,7 +950,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 					// Value at dest depends on inversion of other source
 					not = not(otherSource);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 					removeVertex(dest);
 					simplifyUp(source, variableInputs);
@@ -938,7 +966,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 					addEdge(newEdge, source, not, EdgeType.DIRECTED);
 					edges.add(newEdge);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 					removeVertex(dest);
 					simplifyUp(otherSource, variableInputs);
@@ -953,7 +986,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 					addEdge(newEdge, source, not, EdgeType.DIRECTED);
 					edges.add(newEdge);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 					removeVertex(dest);
 					simplifyUp(otherSource, variableInputs);
@@ -961,7 +999,12 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 					// Value at dest depends on inversion of other source
 					not = not(otherSource);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 					removeVertex(dest);
 					simplifyUp(source, variableInputs);
@@ -972,14 +1015,23 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 				if (values.get(source)) {
 					// Value at dest depends on other source
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), otherSource, successor,
-								EdgeType.DIRECTED);
+						addEdge(otherSource, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, otherSource);
 					}
 				} else {
 					// Value at dest depends on inversion of other source
 					not = not(otherSource);
 					for (Gate successor : getSuccessors(dest)) {
-						addEdge(new Edge(), not, successor, EdgeType.DIRECTED);
+						addEdge(not, successor);
+					}
+					// Transfer output node before deleting
+					for (int index = outputNodes.indexOf(dest); index != -1; index = outputNodes
+							.indexOf(dest)) {
+						outputNodes.set(index, not);
 					}
 				}
 				removeVertex(dest);
@@ -1016,7 +1068,7 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 * @param variableInputs
 	 */
 	private void simplifyUp(Gate vertex, List<Gate> variableInputs) {
-		if (getSuccessorCount(vertex) == 0) {
+		if (getSuccessorCount(vertex) == 0 && !outputNodes.contains(vertex)) {
 			if (vertex.getType() == Gate.Type.INPUT) {
 				if (!fixed.containsKey(vertex)
 						&& !variableInputs.contains(vertex)) {
@@ -1062,17 +1114,6 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	 */
 	public List<Gate> getOutputNodes() {
 		return outputNodes;
-	}
-
-	/**
-	 * Returns new output node
-	 * 
-	 * @return output node
-	 */
-	public Gate getOutputNode() {
-		Gate gate = GateFactory.getOutputNode();
-		addVertex(gate);
-		return gate;
 	}
 
 	/**
@@ -1364,8 +1405,8 @@ public class BooleanCircuit extends DirectedSparseGraph<Gate, Edge> {
 	public static String binaryToHexString(String binaryStr) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < binaryStr.length(); i += 8) {
-			sb.append(String.format("%02x", Integer.parseInt(
-					binaryStr.substring(i, i + 8), 2)));
+			sb.append(String.format("%02x",
+					Integer.parseInt(binaryStr.substring(i, i + 8), 2)));
 		}
 		return sb.toString();
 	}

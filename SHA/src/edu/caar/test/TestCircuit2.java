@@ -35,8 +35,9 @@ public class TestCircuit2 extends BooleanCircuit {
 		// Add edges to create linking structure
 		Gate input = getInputNode();
 		// Connect to output node
-		addEdge(new Edge(), and(and(getInputNode(), input), input),
-				getOutputNode(), EdgeType.DIRECTED);
+		outputNodes.add(and(and(getInputNode(), input), input));
+//		addEdge(new Edge(), and(and(getInputNode(), input), input),
+//				getOutputNode(), EdgeType.DIRECTED);
 	}
 
 	/**

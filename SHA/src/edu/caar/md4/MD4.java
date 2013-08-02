@@ -1,6 +1,7 @@
 package edu.caar.md4;
 
 import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,9 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import edu.caar.circuit.BooleanCircuit;
-import edu.caar.circuit.Edge;
 import edu.caar.circuit.Gate;
-import edu.uci.ics.jung.graph.util.EdgeType;
 
 /**
  * Models circuit for MD4 hash algorithm
@@ -141,12 +140,10 @@ public class MD4 extends BooleanCircuit {
 			hValue = add(hConstants.get(i), wVariables.get(i));
 			for (int j = 3; j >= 0; j--) {
 				for (int k = 0; k < 8; k++) {
-				addEdge(new Edge(), hValue.get(8 * j + k), getOutputNode(),
-						EdgeType.DIRECTED);
+					outputNodes.add(hValue.get(8 * j + k));
 				}
 			}
 		}
-		
 
 		// Set y constants and simplify circuit (builds constants into circuit)
 		List<Boolean> constants = getYConstants();
@@ -290,7 +287,7 @@ public class MD4 extends BooleanCircuit {
 		resetAllGates();
 
 		// Message has given length
-		int length = 64;
+		int length = 160;
 		for (int i = 0; i < length; i++) {
 			out.write("-1,");
 		}
@@ -315,7 +312,7 @@ public class MD4 extends BooleanCircuit {
 
 		// Fix constants
 		List<Boolean> constants = getHConstants();
-		for (int i = 0; i < 160; i++) {
+		for (int i = 0; i < 128; i++) {
 			input.put(getIndex(i + 512), constants.get(i));
 			out.write(constants.get(i) ? "1," : "0,");
 		}
@@ -336,7 +333,7 @@ public class MD4 extends BooleanCircuit {
 		int number = 500;
 		Map<Integer, Boolean> ints = BooleanCircuit.getRandInts(number, 672);
 		boolean value;
-		for (int i = 0; i < 672; i++) {
+		for (int i = 0; i < 640; i++) {
 			if (ints.containsKey(i)) {
 				value = getRandBoolean();
 				setAndFixValue(inputNodes.get(i), value);
@@ -659,54 +656,54 @@ public class MD4 extends BooleanCircuit {
 		System.out.println(binaryToHexString(booleanListToString(circuit
 				.getOutput(input))));
 
-		// // Comma delineated output
-		// try {
-		// // Create file and write stream
-		// FileWriter fstream = new FileWriter("minCutData.csv", true);
-		// BufferedWriter out = new BufferedWriter(fstream);
-		//
-		// // Fix inputs and simplify circuit
-		// System.out.println("Fixing input...");
-		// circuit.fixInput(out);
-		// // circuit.randomlyFixInput(out);
-		//
-		// // Simplify circuit
-		// System.out.println("Simplifying circuit...");
-		// List<Gate> variableInputs = circuit.simplifyCircuit();
-		//
-		// // Print collisions
-		// // List<String> inputs = new ArrayList<String>((int) Math.pow(2,
-		// // variableInputs.size()));
-		// // circuit.generateInputs(variableInputs, inputs);
-		// // List<String> outputs = new ArrayList<String>((int)
-		// // Math.pow(2,
-		// // variableInputs.size()));
-		// // for (String input : inputs) {
-		// // outputs.add(booleanListToString(circuit.getOutput(input)));
-		// // }
-		// // System.out.println("Inputs with collisions: " + inputs +
-		// // " --> "
-		// // + outputs);
-		//
-		// // System.out
-		// // .println(binarytoHexString(booleanListToString(circuit
-		// // .getOutput(stringToBooleanList(input)))));
-		//
-		// // Min-cut
-		// System.out.println("Calculating min-cut...");
-		// System.out.println("The edge set is: " + circuit.getMinCutEdges());
-		// out.write(circuit.getMinCutEdges().size() + ",");
-		// out.write(variableInputs.toString().replace(',', ' ') + "\n");
-		//
-		// // Close stream
-		// out.close();
-		// } catch (Exception e) {
-		// System.err.println("Error: " + e.getMessage());
-		// }
-		//
-		// // // Birthday attack
-		// // System.out.println("Carrying out birthday attack...");
-		// // circuit.birthdayAttack();
+		// Comma delineated output
+		try {
+			// Create file and write stream
+			FileWriter fstream = new FileWriter("minCutMD4.csv", true);
+			BufferedWriter out = new BufferedWriter(fstream);
+
+			// Fix inputs and simplify circuit
+			System.out.println("Fixing input...");
+			circuit.randomlyFixInput(out);
+			// circuit.fixInput(out);
+			
+			// Simplify circuit
+			System.out.println("Simplifying circuit...");
+			List<Gate> variableInputs = circuit.simplifyCircuit();
+
+			// Print collisions
+			// List<String> inputs = new ArrayList<String>((int) Math.pow(2,
+			// variableInputs.size()));
+			// circuit.generateInputs(variableInputs, inputs);
+			// List<String> outputs = new ArrayList<String>((int)
+			// Math.pow(2,
+			// variableInputs.size()));
+			// for (String input : inputs) {
+			// outputs.add(booleanListToString(circuit.getOutput(input)));
+			// }
+			// System.out.println("Inputs with collisions: " + inputs +
+			// " --> "
+			// + outputs);
+
+			// System.out
+			// .println(binarytoHexString(booleanListToString(circuit
+			// .getOutput(stringToBooleanList(input)))));
+
+			// Min-cut
+			System.out.println("Calculating min-cut...");
+			System.out.println("The edge set is: " + circuit.getMinCutEdges());
+			out.write(circuit.getMinCutEdges().size() + ",");
+			out.write(variableInputs.toString().replace(',', ' ') + "\n");
+
+			// Close stream
+			out.close();
+		} catch (Exception e) {
+			System.err.println("Error: " + e.getMessage());
+		}
+
+		// // Birthday attack
+		// System.out.println("Carrying out birthday attack...");
+		// circuit.birthdayAttack();
 	}
 
 }

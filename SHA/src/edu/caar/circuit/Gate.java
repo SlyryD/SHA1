@@ -13,7 +13,7 @@ public class Gate {
 	 * @author Ryan
 	 */
 	public enum Type {
-		INPUT, OUTPUT, NOT, AND, OR, XOR, NAND, NOR, XNOR, SINK
+		INPUT, NOT, AND, OR, XOR, NAND, NOR, XNOR, SINK
 	}
 
 	// Gate type
@@ -79,8 +79,6 @@ public class Gate {
 		switch (type) {
 		case INPUT:
 			return "INPUT" + number;
-		case OUTPUT:
-			return "OUTPUT" + number;
 		case NOT:
 			return "NOT" + number;
 		case AND:

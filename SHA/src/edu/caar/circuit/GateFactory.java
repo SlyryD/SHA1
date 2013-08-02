@@ -8,7 +8,7 @@ package edu.caar.circuit;
 public class GateFactory {
 
 	// Automatic id numbering for different types of gates
-	private static int inNum = 0, outNum = 0, notNum = 0, andNum = 0,
+	private static int inNum = 0, notNum = 0, andNum = 0,
 			orNum = 0, xorNum = 0, nandNum = 0, norNum = 0, xnorNum = 0,
 			sinkNum = 0;
 
@@ -22,8 +22,6 @@ public class GateFactory {
 		switch (type) {
 		case INPUT:
 			return inNum++;
-		case OUTPUT:
-			return outNum++;
 		case NOT:
 			return notNum++;
 		case AND:
@@ -50,15 +48,6 @@ public class GateFactory {
 	 */
 	public static Gate getInputNode() {
 		return new Gate(Gate.Type.INPUT, getNextNum(Gate.Type.INPUT));
-	}
-
-	/**
-	 * Returns output node vertex
-	 * 
-	 * @return output node
-	 */
-	public static Gate getOutputNode() {
-		return new Gate(Gate.Type.OUTPUT, getNextNum(Gate.Type.OUTPUT));
 	}
 
 	/**
