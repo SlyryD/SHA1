@@ -39,10 +39,6 @@ public class TestCircuit extends BooleanCircuit {
 		for (int i = 0; i < 3; i++) {
 			outputNodes.add(xor);
 		}
-		// addEdge(new Edge(), or, getOutputNode(), EdgeType.DIRECTED);
-		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
-		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
-		// addEdge(new Edge(), xor, getOutputNode(), EdgeType.DIRECTED);
 	}
 
 	public void generateInputs(List<Gate> variableInputs, List<String> inputs) {
@@ -64,14 +60,14 @@ public class TestCircuit extends BooleanCircuit {
 		}
 	}
 
-	public boolean birthdayAttack() {
+	public void birthdayAttack() {
 		// Number of terms to search 2^n/2 where n = 4
 		int numTerms = (int) Math.pow(2, 2); // 4 terms
 		int count = 0;
 		String[] inputs;
 		String minCutValues;
 
-		while (count < 10) {
+		while (true) {
 			count += 1;
 			System.out.println("Iteration number " + count);
 			// Generate 2^(n/2) random terms out of 2^4 terms
@@ -92,7 +88,7 @@ public class TestCircuit extends BooleanCircuit {
 							+ " --> " + booleanListToString(getOutput(value))
 							+ "\n" + input + " --> "
 							+ booleanListToString(getOutput(input)));
-					return true;
+					return;
 				} else {
 					table.put(minCutValues, input);
 				}
@@ -101,7 +97,6 @@ public class TestCircuit extends BooleanCircuit {
 			System.out
 					.println("No collisions found. Trying with 2^2 new random terms.");
 		}
-		return false;
 	}
 
 	/**
@@ -111,7 +106,6 @@ public class TestCircuit extends BooleanCircuit {
 	 */
 	public static void main(String[] args) {
 		// Create circuits
-		TestCircuit tempCircuit;
 		TestCircuit circuit = new TestCircuit();
 
 		// for (int i = 0; i < 10; i++) {
@@ -131,24 +125,24 @@ public class TestCircuit extends BooleanCircuit {
 		// Birthday attack
 		System.out
 				.println("---------BIRTHDAY ATTACK ON ORIGINAL CIRCUIT----------");
-		while (!circuit.birthdayAttack()) {
-		}
+		circuit.birthdayAttack();
 
 		System.out
-				.println("---------BIRTHDAY ATTACK ON SIMPLIFIED CIRCUITS----------");
-		do {
-			// New circuit to be simplified
-			tempCircuit = new TestCircuit();
-			// Hardcode inputs
-			tempCircuit.minCutSetInput();
-			// Simplify circuit
-			tempCircuit.simplifyCircuit();
-		} while (!tempCircuit.birthdayAttack());
-
+				.println("---------BIRTHDAY ATTACK ON SIMPLIFIED CIRCUIT----------");
+		// New circuit to be simplified
+		TestCircuit tempCircuit = new TestCircuit();
+		// Hardcode inputs
+		tempCircuit.minCutSetInput();
+		// Display circuit
+		new DisplayCircuit(tempCircuit).display();
+		// Simplify circuit
+		tempCircuit.simplifyCircuit();
+		// Attack circuit
+		tempCircuit.birthdayAttack();
+		
 		// Simplify circuit
 		tempCircuit = new TestCircuit();
 		tempCircuit.minCutSetInput();
-		new DisplayCircuit(tempCircuit).display();
 		List<Gate> variableInputs = tempCircuit.simplifyCircuit();
 		System.out.println("Variable Inputs: " + variableInputs);
 
